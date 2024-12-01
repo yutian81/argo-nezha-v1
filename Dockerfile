@@ -2,7 +2,7 @@ FROM ghcr.io/nezhahq/nezha
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY --from=nginx:alpine /etc/nginx /etc/nginx
-COPY --from=nginx:alpine /usr/sbin/nginx /usr/local/bin/nginx
+COPY --from=nginx:alpine /usr/sbin/nginx /usr/sbin/nginx
 
 COPY nginx.conf /etc/nginx/nginx.conf
 
