@@ -11,7 +11,8 @@ RUN mkdir -p /var/log/nginx && \
     mkdir -p /var/run && \
     chmod -R 777 /var/log/nginx && \
     chmod -R 777 /var/cache/nginx && \
-    chmod -R 777 /var/run
+    chmod -R 777 /var/run && \
+    chmod +x /usr/sbin/nginx
 
 ENV TZ=Asia/Shanghai
 
