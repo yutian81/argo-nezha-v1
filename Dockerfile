@@ -1,6 +1,17 @@
 FROM ghcr.io/nezhahq/nezha
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+COPY --from=nginx:alpine /etc/nginx /etc/nginx
+COPY --from=nginx:alpine /usr/sbin/nginx /usr/sbin/nginx
+
+COPY nginx.conf /etc/nginx/nginx.conf
+
+RUN mkdir -p /var/log/nginx && \
+    mkdir -p /var/cache/nginx && \
+    mkdir -p /var/run && \
+    chmod -R 777 /var/log/nginx && \
+    chmod -R 777 /var/cache/nginx && \
+    chmod -R 777 /var/run
 
 ENV TZ=Asia/Shanghai
 
