@@ -1,4 +1,4 @@
 #!/bin/sh
 cloudflared tunnel --no-autoupdate run --token $CF_TOKEN & \
-/usr/sbin/nginx & \
+nginx & \
 exec /dashboard/app
