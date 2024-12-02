@@ -1,13 +1,5 @@
 #!/bin/sh
 
-# 显示系统信息
-echo "System information:"
-uname -a
-
-# 显示 nginx 二进制文件位置和权限
-echo "Nginx binary information:"
-ls -l /usr/sbin/nginx
-
 # 启动 cloudflared 隧道
 echo "Starting cloudflared..."
 cloudflared tunnel --no-autoupdate run --token $CF_TOKEN &
