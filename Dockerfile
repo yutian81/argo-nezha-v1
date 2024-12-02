@@ -11,7 +11,7 @@ ENV TZ=Asia/Shanghai
 
 WORKDIR /dashboard
 
-COPY --from=app /dashboard/app /dashboard/app
+COPY --from=app /dashboard /dashboard
 
 RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
 
