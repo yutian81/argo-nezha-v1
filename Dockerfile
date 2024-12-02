@@ -1,22 +1,23 @@
 FROM ghcr.io/nezhahq/nezha
 
-# 安装基础工具和依赖
-RUN wget -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
-    && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r0/glibc-2.35-r0.apk \
-    && apk add --no-cache /glibc-2.35-r0.apk \
-    && rm -f /glibc-2.35-r0.apk \
-    && apk add --no-cache \
-        libstdc++ \
-        ca-certificates \
-        pcre \
-        zlib \
-        openssl
+# 创建一个临时阶段来收集所需的库
+FROM nginx:alpine AS nginx-deps
+RUN mkdir -p /nginx-libs
+RUN ldd /usr/sbin/nginx | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp '{}' /nginx-libs/
 
-# 复制所需文件
-COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+# 返回到主镜像
+FROM ghcr.io/nezhahq/nezha
+
+# 复制 nginx 及其依赖
 COPY --from=nginx:alpine /usr/sbin/nginx /usr/sbin/nginx
 COPY --from=nginx:alpine /etc/nginx /etc/nginx
 COPY --from=nginx:alpine /usr/share/nginx/html /usr/share/nginx/html
+COPY --from=nginx-deps /nginx-libs/* /lib/
+
+# 复制 cloudflared
+COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+
+# 配置 nginx
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # 创建必要的目录和文件
@@ -29,15 +30,9 @@ RUN mkdir -p /var/log/nginx \
     && touch /var/log/nginx/error.log
 
 ENV TZ=Asia/Shanghai
-
 WORKDIR /dashboard
-
 RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
-
 EXPOSE 8008
-
 COPY entrypoint.sh /entrypoint.sh
-
 RUN chmod +x /entrypoint.sh
-
 CMD ["/entrypoint.sh"]
