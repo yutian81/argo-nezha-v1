@@ -28,5 +28,11 @@ COPY entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /backup.sh && chmod +x /entrypoint.sh
 
+# 创建一个目录来存放 cron 任务
+RUN mkdir -p /var/spool/cron/crontabs
+
+# 创建一个包含 cron 任务的脚本文件
+RUN echo "0 2 * * * /backup.sh >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root
+
 # 设置默认启动命令
 CMD ["/entrypoint.sh"]
