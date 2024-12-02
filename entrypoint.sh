@@ -1,4 +1,9 @@
 #!/bin/sh
+set -e
+
+# 创建 nginx 用户
+addgroup -S nginx 2>/dev/null
+adduser -S nginx -G nginx 2>/dev/null
 
 # 启动 cloudflared 隧道
 echo "Starting cloudflared..."
@@ -7,11 +12,11 @@ cf_pid=$!
 
 # 检查 nginx 配置
 echo "Testing nginx configuration..."
-/usr/sbin/nginx -t
+nginx -t
 
 # 启动 Nginx
 echo "Starting nginx..."
-/usr/sbin/nginx -g "daemon off;" &
+nginx -g "daemon off;" &
 nginx_pid=$!
 
 # 启动 /dashboard/app
