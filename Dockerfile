@@ -6,7 +6,7 @@ COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
 COPY --from=app /dashboard /dashboard
 
-COPY main.conf /etc/nginx/conf.d/main.conf 
+COPY nginx.conf /etc/nginx/nginx.conf 
 
 ENV TZ=Asia/Shanghai
 
