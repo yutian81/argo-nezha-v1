@@ -20,6 +20,10 @@ COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/
 # 配置 nginx
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# 创建 nginx 用户和组
+RUN addgroup -S nginx && \
+    adduser -S -G nginx -H -D -s /sbin/nologin nginx
+
 # 创建必要的目录和文件
 RUN mkdir -p /var/log/nginx \
     && mkdir -p /var/cache/nginx \
@@ -29,8 +33,11 @@ RUN mkdir -p /var/log/nginx \
     && touch /var/log/nginx/access.log \
     && touch /var/log/nginx/error.log \
     && mkdir -p /tmp \
-    && touch /tmp/nginx.pid \
-    && chmod 666 /tmp/nginx.pid
+    && chown -R nginx:nginx /tmp/nginx.pid \
+    && chown -R nginx:nginx /tmp/nginx.pid \
+    && chown -R nginx:nginx /var/log/nginx \
+    && chown -R nginx:nginx /var/cache/nginx \
+    && chown -R nginx:nginx /run/nginx
 
 ENV TZ=Asia/Shanghai
 WORKDIR /dashboard
