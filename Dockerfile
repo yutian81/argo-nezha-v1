@@ -1,48 +1,24 @@
-FROM ghcr.io/nezhahq/nezha
+FROM ghcr.io/nezhahq/nezha AS app
 
-# 创建一个临时阶段来收集所需的库
-FROM nginx:alpine AS nginx-deps
-RUN mkdir -p /nginx-libs
-RUN ldd /usr/sbin/nginx | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp '{}' /nginx-libs/
+FROM nginx:stable-alpine
 
-# 返回到主镜像
-FROM ghcr.io/nezhahq/nezha
-
-# 复制 nginx 及其依赖
-COPY --from=nginx:alpine /usr/sbin/nginx /usr/sbin/nginx
-COPY --from=nginx:alpine /etc/nginx /etc/nginx
-COPY --from=nginx:alpine /usr/share/nginx/html /usr/share/nginx/html
-COPY --from=nginx-deps /nginx-libs/* /lib/
-
-# 复制 cloudflared
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+COPY --from=app /etc/ssl/certs /etc/ssl/certs
 
-# 配置 nginx
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# 创建 nginx 用户和组
-RUN addgroup -S nginx && \
-    adduser -S -G nginx -H -D -s /sbin/nologin nginx
-
-# 创建必要的目录和文件
-RUN mkdir -p /var/log/nginx \
-    && mkdir -p /var/cache/nginx \
-    && mkdir -p /run/nginx \
-    && mkdir -p /var/lib/nginx \
-    && mkdir -p /var/lib/nginx/tmp \
-    && touch /var/log/nginx/access.log \
-    && touch /var/log/nginx/error.log \
-    && mkdir -p /tmp \
-    && chown -R nginx:nginx /tmp/nginx.pid \
-    && chown -R nginx:nginx /tmp/nginx.pid \
-    && chown -R nginx:nginx /var/log/nginx \
-    && chown -R nginx:nginx /var/cache/nginx \
-    && chown -R nginx:nginx /run/nginx
+COPY main.conf /etc/nginx/conf.d/mian.conf 
 
 ENV TZ=Asia/Shanghai
+
 WORKDIR /dashboard
-RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
+
+COPY --from=app /dashboard /dashboard
+
+RUN chmod -R 777 /dashboard
+
 EXPOSE 8008
+
 COPY entrypoint.sh /entrypoint.sh
+
 RUN chmod +x /entrypoint.sh
+
 CMD ["/entrypoint.sh"]
