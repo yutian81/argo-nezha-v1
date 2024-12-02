@@ -1,5 +1,5 @@
 # 使用官方 Nginx 镜像作为源镜像
-FROM nginx:alpine AS nginx
+FROM nginx:stable-alpine AS nginx
 
 # 使用 ghcr.io/nezhahq/nezha 作为基础镜像
 FROM ghcr.io/nezhahq/nezha
