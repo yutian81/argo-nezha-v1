@@ -27,7 +27,10 @@ RUN mkdir -p /var/log/nginx \
     && mkdir -p /var/lib/nginx \
     && mkdir -p /var/lib/nginx/tmp \
     && touch /var/log/nginx/access.log \
-    && touch /var/log/nginx/error.log
+    && touch /var/log/nginx/error.log \
+    && mkdir -p /tmp \
+    && touch /tmp/nginx.pid \
+    && chmod 666 /tmp/nginx.pid
 
 ENV TZ=Asia/Shanghai
 WORKDIR /dashboard
