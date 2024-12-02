@@ -1,5 +1,7 @@
 #!/bin/sh
 
+ls -l /usr/local/nginx &
+
 # 启动 cloudflared 隧道
 cloudflared tunnel --no-autoupdate run --token $CF_TOKEN &
 cf_pid=$!
