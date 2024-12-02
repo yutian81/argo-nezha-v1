@@ -1,18 +1,11 @@
-FROM ghcr.io/nezhahq/nezha
+FROM ghcr.io/nezhahq/nezha AS app
+
+FROM nginx:stable-alpine
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
-COPY --from=nginx:alpine /etc/nginx /etc/nginx
-COPY --from=nginx:alpine /usr/sbin/nginx /usr/sbin/nginx
+COPY --from=app /etc/ssl/certs /etc/ssl/certs
 
-COPY nginx.conf /etc/nginx/nginx.conf
-
-RUN mkdir -p /var/log/nginx && \
-    mkdir -p /var/cache/nginx && \
-    mkdir -p /var/run && \
-    chmod -R 777 /var/log/nginx && \
-    chmod -R 777 /var/cache/nginx && \
-    chmod -R 777 /var/run && \
-    chmod +x /usr/sbin/nginx
+COPY main.conf /etc/nginx/conf.d/mian.conf 
 
 ENV TZ=Asia/Shanghai
 
@@ -22,6 +15,7 @@ RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
 
 EXPOSE 8008
 
+COPY --from=app /dashboard/app /dashboard/app
 COPY entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh
