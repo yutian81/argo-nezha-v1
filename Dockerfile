@@ -7,7 +7,7 @@ RUN apk add --no-cache aws-cli tar gzip tzdata
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
 
-COPY nginx.conf /etc/nginx/nginx.conf 
+COPY main.conf /etc/nginx/conf.d/main.conf 
 
 ENV TZ=Asia/Shanghai
 
