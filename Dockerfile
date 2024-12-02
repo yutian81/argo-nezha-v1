@@ -11,9 +11,9 @@ ENV TZ=Asia/Shanghai
 
 WORKDIR /dashboard
 
-COPY --from=app /dashboard /dashboard
+COPY --from=app /dashboard/app /dashboard/app
 
-RUN chmod -R 777 /dashboard
+RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
 
 EXPOSE 8008
 
