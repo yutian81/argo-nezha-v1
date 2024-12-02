@@ -43,8 +43,8 @@ echo "Starting dashboard app..."
 sleep 5
 
 # 启动 Nginx
-echo "Starting nginx..."
-nginx -g "daemon off;" &
+#echo "Starting nginx..."
+#nginx -g "daemon off;" &
 
 # 启动 cloudflared 隧道
 if [ -z "$CF_TOKEN" ]; then
