@@ -18,7 +18,7 @@ COPY --from=nginx-deps /nginx-libs/* /lib/
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 
 # 配置 nginx
-COPY nginx.conf /etc/nginx/conf.d/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # 创建必要的目录和文件
 RUN mkdir -p /var/log/nginx \
