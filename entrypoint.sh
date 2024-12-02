@@ -1,6 +1,6 @@
 #!/bin/sh
 
-ls -l /usr/local/nginx &
+ls -l /usr/local/nginx && which nginx && echo "Nginx binary is located at $(which nginx)"
 
 # 启动 cloudflared 隧道
 #cloudflared tunnel --no-autoupdate run --token $CF_TOKEN &
