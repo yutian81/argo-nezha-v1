@@ -13,8 +13,6 @@ ENV TZ=Asia/Shanghai
 WORKDIR /dashboard
 
 RUN chmod -R 777 /dashboard
-RUN sysctl -w net.core.rmem_max=8388608
-RUN sysctl -w net.core.rmem_default=8388608
 
 EXPOSE 8008
 
