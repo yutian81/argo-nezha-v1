@@ -31,10 +31,6 @@ fi
 # 启动crond服务
 crond
 
-# 检查 nginx 配置
-echo "Testing nginx configuration..."
-nginx -t
-
 # 启动 dashboard app
 echo "Starting dashboard app..."
 /dashboard/app &
@@ -42,9 +38,9 @@ echo "Starting dashboard app..."
 # 等待几秒钟确保 app 启动
 sleep 5
 
-# 启动 Nginx
-echo "Starting nginx..."
-nginx -g "daemon off;" &
+# 启动 Caddy 2
+echo "Starting Caddy 2..."
+caddy run --config /etc/caddy/Caddyfile --adapter caddyfile &
 
 # 启动 cloudflared 隧道
 if [ -z "$CF_TOKEN" ]; then
