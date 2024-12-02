@@ -13,7 +13,7 @@ WORKDIR /dashboard
 
 COPY --from=app /dashboard /dashboard
 
-RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
+RUN chmod -R 777 /dashboard
 
 EXPOSE 8008
 
