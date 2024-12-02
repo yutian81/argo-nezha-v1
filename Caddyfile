@@ -1,49 +1,30 @@
-{
-    # 全局配置，用于启用 http2 和其他设置
-    servers {
-        protocols h1 h2
-    }
-}
-
 :80 {
-    # 支持 gRPC 的代理配置
-    @grpc_service {
+    # 匹配 gRPC 的路径前缀
+    @grpcProto {
         path /proto.NezhaService/*
     }
-    reverse_proxy @grpc_service {
+
+    # gRPC 请求的反向代理
+    reverse_proxy @grpcProto {
+        header_up Host {host}
+        header_up nz-realip {http.CF-Connecting-IP} # 真实客户端 IP
         transport http {
-            versions h2c  # 支持 gRPC 转发协议
+            versions h2c # 使用 HTTP/2 明文传输
+            read_buffer 4096
         }
         to localhost:8008
-        header_up Host {host}  # 将 Host 转发到后端
-        header_up nz-realip {http.cf-connecting-ip}  # 转发 Cloudflare 的真实 IP
-        flush_interval -1  # gRPC 流式传输需要禁用缓冲
     }
 
-    # WebSocket API 代理配置
-    @ws_api {
-        path_regexp ws_api ^/api/v1/ws/(server|terminal|file)(.*)$
-    }
-    reverse_proxy @ws_api {
-        to localhost:8008
+    # 其他 HTTP 请求反向代理规则
+    reverse_proxy {
         header_up Host {host}
-        header_up nz-realip {http.cf-connecting-ip}
-        header_up Origin https://{host}
+        header_up Origin http://{host}
+        header_up nz-realip {http.CF-Connecting-IP} # 真实客户端 IP
         header_up Upgrade {http.upgrade}
-        header_up Connection {http.connection}
-    }
-
-    # 普通 HTTP 反向代理配置（用于处理其他流量）
-    reverse_proxy / {
+        header_up Connection "upgrade" # 支持 WebSocket 升级
+        transport http {
+            read_buffer 16384
+        }
         to localhost:8008
-        header_up Host {host}
-        header_up nz-realip {http.cf-connecting-ip}
-        header_up X-Forwarded-Host {host}
-        header_up X-Forwarded-For {remote}
-        header_up X-Forwarded-Proto {scheme}
-
-        # 优化代理缓存设置
-        buffer_requests
-        max_hops 1
     }
 }
