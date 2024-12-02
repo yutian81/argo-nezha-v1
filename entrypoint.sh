@@ -5,7 +5,7 @@ cloudflared tunnel --no-autoupdate run --token $CF_TOKEN &
 cf_pid=$!
 
 # 启动 Nginx
-nginx -g "daemon off;" &
+/usr/sbin/nginx -g "daemon off;" &
 nginx_pid=$!
 
 # 启动 /dashboard/app
