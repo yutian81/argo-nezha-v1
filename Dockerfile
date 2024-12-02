@@ -4,13 +4,15 @@ FROM nginx:stable-alpine
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
-COPY --from=app /dashboard /dashboard
 
-COPY nginx.conf /etc/nginx/nginx.conf 
+COPY main.conf /etc/nginx/conf.d/main.conf 
 
 ENV TZ=Asia/Shanghai
 
 WORKDIR /dashboard
+
+COPY --from=app /dashboard/app /dashboard/app
+COPY --from=app /dashboard/data /dashboard/data
 
 RUN chmod -R 777 /dashboard
 
