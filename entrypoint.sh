@@ -1,9 +1,4 @@
 #!/bin/sh
-set -e
-
-# 创建 nginx 用户
-addgroup -S nginx 2>/dev/null
-adduser -S nginx -G nginx 2>/dev/null
 
 # 启动 cloudflared 隧道
 echo "Starting cloudflared..."
