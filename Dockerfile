@@ -1,30 +1,38 @@
 FROM ghcr.io/nezhahq/nezha
 
-# 复制 caddy 2 可执行文件
-COPY --from=caddy:2 /usr/bin/caddy /usr/bin/caddy
+# 创建一个临时阶段来收集所需的库
+FROM nginx:alpine AS nginx-deps
+RUN mkdir -p /nginx-libs
+RUN ldd /usr/sbin/nginx | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp '{}' /nginx-libs/
 
-# 设置 Caddy 的工作目录，用于存储证书和状态
-WORKDIR /etc/caddy
-RUN mkdir -p /etc/caddy /usr/share/caddy /var/lib/caddy \
-    && chmod -R 777 /etc/caddy /usr/share/caddy /var/lib/caddy
+# 返回到主镜像
+FROM ghcr.io/nezhahq/nezha
 
-# 给 Caddy 配置文件适当的权限
-COPY Caddyfile /etc/caddy/Caddyfile
+# 复制 nginx 及其依赖
+COPY --from=nginx:alpine /usr/sbin/nginx /usr/sbin/nginx
+COPY --from=nginx:alpine /etc/nginx /etc/nginx
+COPY --from=nginx:alpine /usr/share/nginx/html /usr/share/nginx/html
+COPY --from=nginx-deps /nginx-libs/* /lib/
 
-# 复制 cloudflared 可执行文件
+# 复制 cloudflared
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 
-# 设置时区和工作目录
+# 配置 nginx
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# 创建必要的目录和文件
+RUN mkdir -p /var/log/nginx \
+    && mkdir -p /var/cache/nginx \
+    && mkdir -p /run/nginx \
+    && mkdir -p /var/lib/nginx \
+    && mkdir -p /var/lib/nginx/tmp \
+    && touch /var/log/nginx/access.log \
+    && touch /var/log/nginx/error.log
+
 ENV TZ=Asia/Shanghai
 WORKDIR /dashboard
 RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
-
-# 暴露必要的端口
-EXPOSE 80
-
-# 复制自定义启动脚本
+EXPOSE 8008
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-# 设置默认启动命令
 CMD ["/entrypoint.sh"]
