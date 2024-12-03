@@ -22,7 +22,7 @@ COPY --from=app /dashboard/app /dashboard/app
 
 RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
 
-EXPOSE 8080
+EXPOSE 8008
 
 COPY backup.sh /backup.sh
 COPY entrypoint.sh /entrypoint.sh
