@@ -1,8 +1,7 @@
 FROM ghcr.io/nezhahq/nezha AS app
-
 FROM debian:stable-slim
 
-# 安装必要的依赖项
+# 安装必要的依赖项,包含 gRPC 运行环境
 RUN apt-get update && apt-get install -y \
     awscli \
     tar \
@@ -10,12 +9,14 @@ RUN apt-get update && apt-get install -y \
     tzdata \
     caddy \
     cron \
-    libssl-dev \  # 添加 libssl-dev
-    libgrpc++-dev \  # 添加 libgrpc++-dev
-    protobuf-compiler \  # 添加 protobuf-compiler
+    protobuf-compiler \
+    libprotobuf-dev \
+    libprotoc-dev \
+    libc6 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 复制 cloudflared 二进制文件
+# 复制 cloudflared 二进制文件  
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 
 # 复制 SSL 证书
@@ -36,7 +37,7 @@ COPY --from=app /dashboard/app /dashboard/app
 # 创建数据目录并设置权限
 RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
 
-# 暴露端口
+# 暴露端口 (添加 gRPC 默认端口)
 EXPOSE 80
 
 # 复制备份脚本和入口脚本
