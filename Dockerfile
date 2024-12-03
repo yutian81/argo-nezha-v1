@@ -1,56 +1,41 @@
 FROM ghcr.io/nezhahq/nezha AS app
-FROM debian:stable-slim
 
-# 安装必要的依赖项,包含 gRPC 运行环境
-RUN apt-get update && apt-get install -y \
-    awscli \
+FROM caddy:alpine
+
+# 安装基础依赖和gRPC相关包
+RUN apk add --no-cache \
+    aws-cli \
     tar \
     gzip \
     tzdata \
-    caddy \
-    cron \
-    protobuf-compiler \
-    libprotobuf-dev \
-    libprotoc-dev \
-    libc6 \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    protobuf \
+    protobuf-dev \
+    gcc \
+    g++ \
+    make \
+    libc-dev
 
-# 复制 cloudflared 二进制文件  
+# 安装 grpc 相关依赖
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    && pip3 install --no-cache-dir grpcio protobuf
+
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
-
-# 复制 SSL 证书
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
+COPY Cadd
 
-# 复制 Caddyfile
-COPY Caddyfile /etc/caddy/Caddyfile
-
-# 设置时区
 ENV TZ=Asia/Shanghai
 
-# 设置工作目录
 WORKDIR /dashboard
+COPY --from=app /dashboard/app /dasoard/data && chmod -R 777 /dashboard
 
-# 复制应用程序
-COPY --from=app /dashboard/app /dashboard/app
+EXPOSE 8080
 
-# 创建数据目录并设置权限
-RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
-
-# 暴露端口 (添加 gRPC 默认端口)
-EXPOSE 80
-
-# 复制备份脚本和入口脚本
 COPY backup.sh /backup.sh
 COPY entrypoint.sh /entrypoint.sh
-
-# 设置脚本可执行权限
 RUN chmod +x /backup.sh && chmod +x /entrypoint.sh
 
-# 创建 cron 目录并设置定时任务
-RUN mkdir -p /var/spool/cron/crontabs && \
-    echo "0 2 * * * /backup.sh >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root && \
-    chmod 600 /var/spool/cron/crontabs/root
+RUN echo "0 2 * * * /backup.sh >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root
 
-# 设置容器启动命令
 CMD ["/entrypoint.sh"]
