@@ -1,25 +1,24 @@
 FROM ghcr.io/nezhahq/nezha AS app
 
-FROM debian:stable-slim
+FROM caddy:alpine
 
-# 安装必要的依赖项
-RUN apt-get update && apt-get install -y \
-    awscli \
+# 安装 gRPC 运行环境所需的依赖项
+RUN apk add --no-cache \
+    grpc \
+    protobuf \
+    protoc \
+    grpc-cli \
+    aws-cli \
     tar \
     gzip \
-    tzdata \
-    caddy \
-    cron \
-    && rm -rf /var/lib/apt/lists/*
+    tzdata
 
-# 复制 cloudflared 二进制文件
+# 复制 cloudflared 和 SSL 证书
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
-
-# 复制 SSL 证书
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
 
 # 复制 Caddyfile
-COPY Caddyfile /etc/caddy/Caddyfile
+COPY Caddyfile /etc/caddy/Caddyfile 
 
 # 设置时区
 ENV TZ=Asia/Shanghai
@@ -27,7 +26,7 @@ ENV TZ=Asia/Shanghai
 # 设置工作目录
 WORKDIR /dashboard
 
-# 复制应用程序
+# 复制应用
 COPY --from=app /dashboard/app /dashboard/app
 
 # 创建数据目录并设置权限
@@ -43,10 +42,8 @@ COPY entrypoint.sh /entrypoint.sh
 # 设置脚本可执行权限
 RUN chmod +x /backup.sh && chmod +x /entrypoint.sh
 
-# 创建 cron 目录并设置定时任务
-RUN mkdir -p /var/spool/cron/crontabs && \
-    echo "0 2 * * * /backup.sh >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root && \
-    chmod 600 /var/spool/cron/crontabs/root
+# 设置定时任务
+RUN echo "0 2 * * * /backup.sh >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root
 
 # 设置容器启动命令
 CMD ["/entrypoint.sh"]
