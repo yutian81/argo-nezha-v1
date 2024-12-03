@@ -8,7 +8,7 @@ RUN apk add --no-cache \
     tar \
     gzip \
     tzdata \
-    openssh-server
+    openssl
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
