@@ -13,13 +13,10 @@ RUN apk add --no-cache \
     gcc \
     g++ \
     make \
-    libc-dev
-
-# 安装 grpc 相关依赖
-RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    && pip3 install --no-cache-dir grpcio protobuf
+    libc-dev \
+    grpc \
+    grpc-dev \
+    grpc-plugins
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
