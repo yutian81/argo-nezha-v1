@@ -29,7 +29,7 @@ else
 fi
 
 # 启动 crond 服务
-cron
+crond
 
 # 启动 dashboard app
 echo "Starting dashboard app..."
