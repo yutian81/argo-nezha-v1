@@ -31,6 +31,8 @@ fi
 # 启动 crond 服务
 crond
 
+sed -i'' 's|tls: false|tls: true|g' /dashboard/data/config.yaml
+
 # 启动 dashboard app
 echo "Starting dashboard app..."
 /dashboard/app &
