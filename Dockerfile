@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     aws-cli \
     tar \
     gzip \
-    tzdata
+    tzdata \
+    openssh-server
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
