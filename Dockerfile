@@ -7,16 +7,7 @@ RUN apk add --no-cache \
     aws-cli \
     tar \
     gzip \
-    tzdata \
-    protobuf \
-    protobuf-dev \
-    gcc \
-    g++ \
-    make \
-    libc-dev \
-    grpc \
-    grpc-dev \
-    grpc-plugins
+    tzdata
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
