@@ -23,7 +23,7 @@ RUN apk add --no-cache \
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
-COPY Cadd
+COPY Caddyfile /etc/caddy/Caddyfile
 
 ENV TZ=Asia/Shanghai
 
