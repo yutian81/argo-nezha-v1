@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     caddy \
     cron \
     libssl-dev \  # 添加 libssl-dev
-    libgrpc++ \   # 添加 libgrpc++
+    libgrpc++-dev \  # 添加 libgrpc++-dev
     protobuf-compiler \  # 添加 protobuf-compiler
     && rm -rf /var/lib/apt/lists/*
 
