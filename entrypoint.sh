@@ -35,12 +35,15 @@ crond
 echo "Starting dashboard app..."
 /dashboard/app &
 
-# 等待几秒钟确保 app 启动
-sleep 5
+openssl genrsa -out /dashboard/nezha.key 2048
+openssl req -new -subj "/CN=$ARGO_DOMAIN" -key /dashboard/nezha.key -out /dashboard/nezha.csr
+openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha.key -out /dashboard/nezha.pem
+
+sleep 3
 
 # 启动 Caddy 2
 echo "Starting Caddy 2..."
-caddy run --config /etc/caddy/Caddyfile --adapter caddyfile &
+caddy run --config /etc/caddy/Caddyfile --adapter caddyfile  --watch &
 
 # 启动 cloudflared 隧道
 if [ -z "$CF_TOKEN" ]; then
