@@ -33,7 +33,7 @@ echo "Starting crond ..."
 crond
 
 # 设置 agent 上报 tls: true
-sed -i'' 's|tls: false|tls: true|g' /dashboard/data/config.yml
+sed -i'' 's|tls: false|tls: true|g' /dashboard/data/config.yaml
 
 # 启动 dashboard app
 echo "Starting dashboard app..."
