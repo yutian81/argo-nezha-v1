@@ -26,5 +26,6 @@
         }
         to localhost:8008
     }
+
     tls /dashboard/nezha.pem /dashboard/nezha.key
 }
