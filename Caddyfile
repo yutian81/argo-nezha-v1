@@ -26,9 +26,5 @@
         }
         to localhost:8008
     }
-    upstream dashboard {
-        server localhost:8008;
-        keepalive 512;
-    }
     tls /dashboard/nezha.pem /dashboard/nezha.key
 }
