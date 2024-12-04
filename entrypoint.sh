@@ -45,6 +45,8 @@ sleep 3
 echo "Starting Caddy 2..."
 caddy run --config /etc/caddy/Caddyfile --adapter caddyfile  --watch &
 
+sleep 3
+
 # 启动 cloudflared 隧道
 if [ -z "$CF_TOKEN" ]; then
     echo "Error: CF_TOKEN is not set"
