@@ -29,7 +29,11 @@ else
 fi
 
 # 启动 crond 服务
+echo "Starting crond ..."
 crond
+
+# 设置 agent 上报 tls: true
+sed -i'' 's|tls: false|tls: true|g' /dashboard/data/config.yml
 
 # 启动 dashboard app
 echo "Starting dashboard app..."
@@ -45,7 +49,7 @@ sleep 3
 echo "Starting Caddy 2..."
 caddy run --config /etc/caddy/Caddyfile --adapter caddyfile  --watch &
 
-sleep 3
+sleep 5
 
 # 启动 cloudflared 隧道
 if [ -z "$CF_TOKEN" ]; then
