@@ -1,4 +1,4 @@
-# Nezha Dashboard V1 With Argo
+# Argo Nezha Dashboard V1
 
 Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项目，提供了一个强大的监控和管理界面。本项目使用 Docker 进行部署，并集成了 Cloudflare Tunnel 来提供安全的访问，项目优势：
 
