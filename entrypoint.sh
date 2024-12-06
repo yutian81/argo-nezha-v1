@@ -45,9 +45,9 @@ openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha
 
 sleep 3
 
-# 启动 Caddy 2
-echo "Starting Caddy 2..."
-caddy run --config /etc/caddy/Caddyfile --adapter caddyfile  --watch &
+# 启动 Nginx
+echo "Starting nginx..."
+nginx -g "daemon off;" &
 
 sleep 5
 
