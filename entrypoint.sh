@@ -49,8 +49,6 @@ sleep 3
 echo "Starting nginx..."
 nginx -g "daemon off;" &
 
-openssl s_client -connect localhost:443
-
 sleep 5
 
 # 启动 cloudflared 隧道
