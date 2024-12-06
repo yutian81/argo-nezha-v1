@@ -49,6 +49,8 @@ sleep 3
 echo "Starting nginx..."
 nginx -g "daemon off;" &
 
+openssl s_client -connect localhost:443
+
 sleep 5
 
 # 启动 cloudflared 隧道
@@ -58,9 +60,7 @@ if [ -z "$CF_TOKEN" ]; then
 fi
 
 echo "Starting cloudflared..."
-cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" >/dev/null 2>&1 &
-
-tail -f /var/log/nginx/error.log
+cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" &
 
 # 等待所有后台进程
 wait
