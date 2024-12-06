@@ -60,7 +60,7 @@ fi
 echo "Starting cloudflared..."
 cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" >/dev/null 2>&1 &
 
-sudo tail -f /var/log/nginx/error.log
+tail -f /var/log/nginx/error.log
 
 # 等待所有后台进程
 wait
