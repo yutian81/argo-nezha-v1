@@ -1,4 +1,4 @@
-{$ARGO_DOMAIN}  {
+:443  {
     @grpcProto {
         path /proto.NezhaService/*
     }
