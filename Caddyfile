@@ -1,4 +1,4 @@
-{env.ARGO_DOMAIN} {
+{$ARGO_DOMAIN}  {
     @grpcProto {
         path /proto.NezhaService/*
     }
