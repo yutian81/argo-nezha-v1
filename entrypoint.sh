@@ -39,10 +39,9 @@ sed -i'' 's|tls: false|tls: true|g' /dashboard/data/config.yaml
 echo "Starting dashboard app..."
 /dashboard/app &
 
-#openssl genrsa -out /dashboard/nezha.key 2048
-#openssl req -new -subj "/CN=$ARGO_DOMAIN" -key /dashboard/nezha.key -out /dashboard/nezha.csr
-#openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha.key -out /dashboard/nezha.pem
-#ls /dashboard
+openssl genrsa -out /dashboard/nezha.key 2048
+openssl req -new -subj "/CN=$ARGO_DOMAIN" -key /dashboard/nezha.key -out /dashboard/nezha.csr
+openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha.key -out /dashboard/nezha.pem
 
 sleep 3
 
