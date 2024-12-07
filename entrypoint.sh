@@ -67,7 +67,9 @@ if [ -z "$CF_TOKEN" ]; then
 fi
 
 echo "Starting cloudflared..."
-cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" &
+# cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" &
+# cloudflared --no-autoupdate tunnel run --token "$CF_TOKEN" &
+
 
 # 等待所有后台进程
 wait
