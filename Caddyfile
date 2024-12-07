@@ -2,12 +2,16 @@
     http_port 2052
 }
 
-:443 {
+:443  {
     reverse_proxy {
-        to localhost:8008
+        header_up Host {host}
+        header_up nz-realip {http.CF-Connecting-IP} # 替换为你的 CDN 提供的私有 header，此处为 CloudFlare 默认
+        # header_up nz-realip {remote_host} # 如果你使用caddy作为最外层，就把上面一行注释掉，启用此行
         transport http {
             versions h2c 2
+            read_buffer 4096
         }
+        to localhost:8008
     }
     tls /dashboard/nezha.pem /dashboard/nezha.key
 }
