@@ -11,3 +11,18 @@
     }
     tls /dashboard/nezha.pem /dashboard/nezha.key
 }
+
+:8080  {
+    reverse_proxy {
+        header_up Host {host}
+        header_up Origin https://{host}
+        header_up nz-realip {http.CF-Connecting-IP} # 替换为你的 CDN 提供的私有 header，此处为 CloudFlare 默认
+        # header_up nz-realip {remote_host} # 如果你使用caddy作为最外层，就把上面一行注释掉，启用此行
+        header_up Upgrade websocket
+        header_up Connection "upgrade"
+        transport http {
+            read_buffer 16384
+        }
+        to localhost:8008
+    }
+}
