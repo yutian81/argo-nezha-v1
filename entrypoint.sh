@@ -44,9 +44,9 @@ if [ -z "$ARGO_DOMAIN" ]; then
     echo "Error: ARGO_DOMAIN is not set"
     exit 1
 fi
-# openssl genrsa -out /dashboard/nezha.key 2048
-# openssl req -new -subj "/CN=$ARGO_DOMAIN" -key /dashboard/nezha.key -out /dashboard/nezha.csr
-# openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha.key -out /dashboard/nezha.pem
+openssl genrsa -out /dashboard/nezha.key 2048
+openssl req -new -subj "/CN=$ARGO_DOMAIN" -key /dashboard/nezha.key -out /dashboard/nezha.csr
+openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha.key -out /dashboard/nezha.pem
 
 sleep 3
 
