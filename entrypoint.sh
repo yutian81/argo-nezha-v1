@@ -33,12 +33,17 @@ echo "Starting crond ..."
 crond
 
 # 设置 agent 上报 tls: true
-sed -i'' 's|tls: false|tls: true|g' /dashboard/data/config.yaml
+# sed -i'' 's|tls: false|tls: true|g' /dashboard/data/config.yaml
 
 # 启动 dashboard app
 echo "Starting dashboard app..."
 /dashboard/app &
 
+# 生成 $ARGO_DOMAIN 证书
+if [ -z "$ARGO_DOMAIN" ]; then
+    echo "Error: ARGO_DOMAIN is not set"
+    exit 1
+fi
 openssl genrsa -out /dashboard/nezha.key 2048
 openssl req -new -subj "/CN=$ARGO_DOMAIN" -key /dashboard/nezha.key -out /dashboard/nezha.csr
 openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha.key -out /dashboard/nezha.pem
