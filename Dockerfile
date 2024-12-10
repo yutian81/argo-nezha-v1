@@ -31,8 +31,8 @@ ENV ARGO_DOMAIN="" \
     CF_TOKEN="" \
     R2_ACCESS_KEY_ID="" \
     R2_BUCKET_NAME="" \
-    R2_ENDPOINT_URL="" 
-    R2_SECRET_ACCESS_KEY=
+    R2_ENDPOINT_URL="" \
+    R2_SECRET_ACCESS_KEY=""
 
 COPY backup.sh /backup.sh
 COPY entrypoint.sh /entrypoint.sh
