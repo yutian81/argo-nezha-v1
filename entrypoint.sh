@@ -37,6 +37,7 @@ crond
 
 # 启动 dashboard app
 echo "Starting dashboard app..."
+printf "nameserver 127.0.0.11\nnameserver 8.8.4.4\nnameserver 223.5.5.5\n" > /etc/resolv.conf
 /dashboard/app &
 
 # 生成 $ARGO_DOMAIN 证书
