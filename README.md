@@ -10,7 +10,7 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
 
 - **监控和管理**: 提供实时的系统监控和管理功能。
 - **自动备份**: 支持自动备份到 Cloudflare R2 存储。
-- **安全访问**: 通过 Caddy 2 和 Cloudflare Tunnel 提供安全的访问。
+- **安全访问**: 通过 nginx 和 Cloudflare Tunnel 提供安全的访问。
 - **自定义配置**: 支持通过环境变量进行自定义配置。
 
 ## 快速开始
