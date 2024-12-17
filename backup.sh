@@ -29,9 +29,14 @@ rm "/tmp/${BACKUP_FILE}"
 
 # 删除7天前的备份
 OLD_DATE=$(date -d "7 days ago" +%Y%m%d)
-aws s3 ls "s3://${BUCKET_NAME}/backups/nezha_backup_" | while read -r line; do
-    backup_date=$(echo "$line" | awk '{print $4}' | cut -d'_' -f3 | cut -d'.' -f1)
-    if [ "${backup_date}" \< "${OLD_DATE}" ]; then
-        aws s3 rm "s3://${BUCKET_NAME}/backups/$(echo "$line" | awk '{print $4}')"
+aws s3 ls "s3://${BUCKET_NAME}/backups/" | grep "nezha_backup_" | while read -r line; do
+    # 提取文件名
+    backup_file=$(echo "$line" | awk '{print $4}')
+    # 提取日期部分 YYYYMMDD
+    backup_date=$(echo "$backup_file" | cut -d'_' -f3)
+    # 比较日期
+    if [ "$backup_date" -le "$OLD_DATE" ]; then
+        echo "Deleting old backup: $backup_file"
+        aws s3 rm "s3://${BUCKET_NAME}/backups/$backup_file"
     fi
 done
