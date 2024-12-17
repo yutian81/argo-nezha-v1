@@ -28,6 +28,8 @@ else
     fi
 fi
 
+sleep 5
+
 # 启动 crond 服务
 echo "Starting crond ..."
 crond
@@ -39,6 +41,8 @@ crond
 echo "Starting dashboard app..."
 /dashboard/app &
 
+sleep 3
+
 # 生成 $ARGO_DOMAIN 证书
 if [ -z "$ARGO_DOMAIN" ]; then
     echo "Error: ARGO_DOMAIN is not set"
@@ -48,8 +52,6 @@ openssl genrsa -out /dashboard/nezha.key 2048
 openssl req -new -subj "/CN=$ARGO_DOMAIN" -key /dashboard/nezha.key -out /dashboard/nezha.csr
 openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha.key -out /dashboard/nezha.pem
 
-sleep 3
-
 # 启动 Caddy 2
 # echo "Starting Caddy 2..."
 # caddy run --config /etc/caddy/Caddyfile --adapter caddyfile  --watch &
@@ -58,7 +60,7 @@ sleep 3
 echo "Starting nginx..."
 nginx -g "daemon off;" &
 
-sleep 5
+sleep 3
 
 # 启动 cloudflared 隧道
 if [ -z "$CF_TOKEN" ]; then
