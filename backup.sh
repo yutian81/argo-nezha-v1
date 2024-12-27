@@ -29,14 +29,27 @@ rm "/tmp/${BACKUP_FILE}"
 
 # 删除7天前的备份
 OLD_DATE=$(date -d "7 days ago" +%Y%m%d)
+echo "Current date: $(date +%Y%m%d)"
+echo "Old date threshold: $OLD_DATE"
+
 aws s3 ls "s3://${BUCKET_NAME}/backups/" | grep "nezha_backup_" | while read -r line; do
     # 提取文件名
     backup_file=$(echo "$line" | awk '{print $4}')
-    # 提取日期部分 YYYYMMDD
-    backup_date=$(echo "$backup_file" | cut -d'_' -f3)
-    # 比较日期
-    if [ "$backup_date" -le "$OLD_DATE" ]; then
-        echo "Deleting old backup: $backup_file"
-        aws s3 rm "s3://${BUCKET_NAME}/backups/$backup_file"
+    # 从文件名中提取日期部分 (YYYYMMDD)
+    backup_date=$(echo "$backup_file" | grep -o "[0-9]\{8\}")
+    
+    echo "Processing file: $backup_file"
+    echo "Extracted date: $backup_date"
+    
+    if [ ! -z "$backup_date" ]; then
+        echo "Comparing dates: $backup_date vs $OLD_DATE"
+        if [ "$backup_date" -lt "$OLD_DATE" ]; then
+            echo "Deleting old backup: $backup_file"
+            aws s3 rm "s3://${BUCKET_NAME}/backups/$backup_file"
+        else
+            echo "Keeping backup: $backup_file"
+        fi
+    else
+        echo "Could not extract date from: $backup_file"
     fi
 done
