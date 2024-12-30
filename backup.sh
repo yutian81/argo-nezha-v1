@@ -14,9 +14,19 @@ export AWS_DEFAULT_REGION="auto"
 export AWS_ENDPOINT_URL="$R2_ENDPOINT_URL"
 export BUCKET_NAME="$R2_BUCKET_NAME"
 
+# 暂停面板
+systemctl stop nezha-dashboard
+
+sleep 1
+
 # 创建备份
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="nezha_backup_${TIMESTAMP}.tar.gz"
+
+sleep 5
+
+# 恢复面板
+systemctl start nezha-dashboard
 
 # 压缩数据
 cd /dashboard && tar -czf "/tmp/${BACKUP_FILE}" data/
