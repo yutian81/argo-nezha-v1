@@ -17,7 +17,7 @@ export BUCKET_NAME="$R2_BUCKET_NAME"
 # 暂停面板
 systemctl stop nezha-dashboard
 
-sleep 1
+sleep 3
 
 # 创建备份
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
