@@ -8,7 +8,8 @@ RUN apk add --no-cache \
     gzip \
     tzdata \
     openssl \
-    sqlite
+    sqlite \
+    coreutils
 
 COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY --from=app /etc/ssl/certs /etc/ssl/certs
