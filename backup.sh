@@ -68,7 +68,7 @@ rm "/tmp/${BACKUP_FILE}"
 rm -rf "$BACKUP_DIR"
 
 # 删除7天前的备份
-OLD_DATE=$(date -D %Y%m%d -d "7 days ago" +%Y%m%d)
+OLD_DATE=$(python3 -c "from datetime import datetime, timedelta; print((datetime.now() - timedelta(days=7)).strftime('%Y%m%d'))")
 echo "Current date: $(date +%Y%m%d)"
 echo "Old date threshold: $OLD_DATE"
 
