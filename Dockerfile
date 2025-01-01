@@ -37,6 +37,6 @@ COPY backup.sh /backup.sh
 COPY entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /backup.sh && chmod +x /entrypoint.sh
-RUN echo "0 2 * * * /backup.sh >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root
+RUN echo "0 2,14 * * * /backup.sh >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root
 
 CMD ["/entrypoint.sh"]
