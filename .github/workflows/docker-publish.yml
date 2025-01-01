@@ -3,7 +3,7 @@ name: Publish Docker Image
 on:
   workflow_dispatch:  # 手动触发
   schedule:
-    - cron: '0 2 * * *'  # 每日凌晨2点自动执行
+    - cron: '0 18 * * *'  # Asia/Shanghai 时间凌晨2点（UTC 时间18:00）
 
 jobs:
   build-and-push:
@@ -18,24 +18,24 @@ jobs:
         run: |
           LATEST_TAG=$(curl -s https://api.github.com/repos/nezhahq/nezha/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
           echo "Latest tag: $LATEST_TAG"
-          echo "::set-output name=latest_tag::$LATEST_TAG"
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
       - name: Read current version
         id: read_version
         run: |
           CURRENT_VERSION=$(cat version)
           echo "Current version: $CURRENT_VERSION"
-          echo "::set-output name=current_version::$CURRENT_VERSION"
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
       - name: Compare versions
         id: compare_versions
         run: |
           if [[ "${{ steps.get_latest_tag.outputs.latest_tag }}" > "${{ steps.read_version.outputs.current_version }}" ]]; then
             echo "New version available, continuing..."
-            echo "::set-output name=should_build::true"
+            echo "should_build=true" >> $GITHUB_OUTPUT
           else
             echo "No new version available, stopping..."
-            echo "::set-output name=should_build::false"
+            echo "should_build=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Set up Docker Buildx
