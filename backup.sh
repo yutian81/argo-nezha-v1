@@ -14,80 +14,58 @@ export AWS_DEFAULT_REGION="auto"
 export AWS_ENDPOINT_URL="$R2_ENDPOINT_URL"
 export BUCKET_NAME="$R2_BUCKET_NAME"
 
-# 暂停面板
-systemctl stop nezha-dashboard
-
-sleep 3
-
 # 创建备份
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="nezha_backup_${TIMESTAMP}.tar.gz"
+BACKUP_DIR="/tmp/nezha_backup_${TIMESTAMP}"
 
-# 优化数据库并导出
-echo "Optimizing and exporting database..."
-sqlite3 "/dashboard/data/sqlite.db" <<EOF
-.output /tmp/tmp.sql
-.dump
-.quit
-EOF
+# 创建 /data 目录结构
+mkdir -p "${BACKUP_DIR}/data"
 
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to export database!"
-    systemctl start nezha-dashboard
-    exit 1
-fi
-
-# 导入到新库并优化
-sqlite3 "/tmp/new.sqlite.db" <<EOF
-.read /tmp/tmp.sql
-.quit
-EOF
+# 备份 SQLite 数据库
+echo "Backing up SQLite database..."
+sqlite3 "/dashboard/data/sqlite.db" "VACUUM INTO '${BACKUP_DIR}/data/sqlite.db'"
 
 if [ $? -ne 0 ]; then
-    echo "Error: Failed to import database!"
-    systemctl start nezha-dashboard
+    echo "Error: Failed to backup SQLite database!"
+    rm -rf "$BACKUP_DIR"
     exit 1
 fi
 
-# 覆盖原库并优化
-mv -f "/tmp/new.sqlite.db" "/dashboard/data/sqlite.db"
-sqlite3 "/dashboard/data/sqlite.db" 'VACUUM;'
-
-if [ $? -eq 0 ]; then
-    echo "Database optimization complete!"
-else
-    echo "Error: Database optimization failed!"
-    systemctl start nezha-dashboard
-    exit 1
-fi
-
-# 清理临时文件
-rm -f /tmp/tmp.sql
-
-# 压缩数据
-echo "Compressing backup data..."
-cd /dashboard && tar -czf "/tmp/${BACKUP_FILE}" data/
+# 备份 config.yaml
+echo "Backing up config.yaml..."
+cp "/dashboard/data/config.yaml" "${BACKUP_DIR}/data/config.yaml"
 
 if [ $? -ne 0 ]; then
-    echo "Error: Failed to compress backup data!"
+    echo "Error: Failed to backup config.yaml!"
+    rm -rf "$BACKUP_DIR"
     exit 1
 fi
 
-# 恢复面板
-systemctl start nezha-dashboard
+# 压缩备份文件
+echo "Compressing backup files..."
+tar -czf "/tmp/${BACKUP_FILE}" -C "$BACKUP_DIR" .
 
-# 上传到R2
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to compress backup files!"
+    rm -rf "$BACKUP_DIR"
+    exit 1
+fi
+
+# 上传到 R2
 echo "Uploading backup to R2..."
 aws s3 cp "/tmp/${BACKUP_FILE}" "s3://${BUCKET_NAME}/backups/${BACKUP_FILE}"
 
 if [ $? -ne 0 ]; then
     echo "Error: Failed to upload backup to R2!"
     rm "/tmp/${BACKUP_FILE}"
+    rm -rf "$BACKUP_DIR"
     exit 1
 fi
 
-# 删除本地临时文件
+# 清理临时文件
 rm "/tmp/${BACKUP_FILE}"
+rm -rf "$BACKUP_DIR"
 
 # 删除7天前的备份
 OLD_DATE=$(date -d "7 days ago" +%Y%m%d)
