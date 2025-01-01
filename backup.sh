@@ -23,16 +23,68 @@ sleep 3
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="nezha_backup_${TIMESTAMP}.tar.gz"
 
-sleep 5
+# 优化数据库并导出
+echo "Optimizing and exporting database..."
+sqlite3 "/dashboard/data/sqlite.db" <<EOF
+.output /tmp/tmp.sql
+.dump
+.quit
+EOF
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to export database!"
+    systemctl start nezha-dashboard
+    exit 1
+fi
+
+# 导入到新库并优化
+sqlite3 "/tmp/new.sqlite.db" <<EOF
+.read /tmp/tmp.sql
+.quit
+EOF
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to import database!"
+    systemctl start nezha-dashboard
+    exit 1
+fi
+
+# 覆盖原库并优化
+mv -f "/tmp/new.sqlite.db" "/dashboard/data/sqlite.db"
+sqlite3 "/dashboard/data/sqlite.db" 'VACUUM;'
+
+if [ $? -eq 0 ]; then
+    echo "Database optimization complete!"
+else
+    echo "Error: Database optimization failed!"
+    systemctl start nezha-dashboard
+    exit 1
+fi
+
+# 清理临时文件
+rm -f /tmp/tmp.sql
 
 # 恢复面板
 systemctl start nezha-dashboard
 
 # 压缩数据
+echo "Compressing backup data..."
 cd /dashboard && tar -czf "/tmp/${BACKUP_FILE}" data/
 
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to compress backup data!"
+    exit 1
+fi
+
 # 上传到R2
+echo "Uploading backup to R2..."
 aws s3 cp "/tmp/${BACKUP_FILE}" "s3://${BUCKET_NAME}/backups/${BACKUP_FILE}"
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to upload backup to R2!"
+    rm "/tmp/${BACKUP_FILE}"
+    exit 1
+fi
 
 # 删除本地临时文件
 rm "/tmp/${BACKUP_FILE}"
@@ -47,10 +99,10 @@ aws s3 ls "s3://${BUCKET_NAME}/backups/" | grep "nezha_backup_" | while read -r 
     backup_file=$(echo "$line" | awk '{print $4}')
     # 从文件名中提取日期部分 (YYYYMMDD)
     backup_date=$(echo "$backup_file" | grep -o "[0-9]\{8\}")
-    
+
     echo "Processing file: $backup_file"
     echo "Extracted date: $backup_date"
-    
+
     if [ ! -z "$backup_date" ]; then
         echo "Comparing dates: $backup_date vs $OLD_DATE"
         if [ "$backup_date" -lt "$OLD_DATE" ]; then
@@ -63,3 +115,5 @@ aws s3 ls "s3://${BUCKET_NAME}/backups/" | grep "nezha_backup_" | while read -r 
         echo "Could not extract date from: $backup_file"
     fi
 done
+
+echo "Backup process completed successfully!"
