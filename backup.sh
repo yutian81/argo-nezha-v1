@@ -64,9 +64,6 @@ fi
 # 清理临时文件
 rm -f /tmp/tmp.sql
 
-# 恢复面板
-systemctl start nezha-dashboard
-
 # 压缩数据
 echo "Compressing backup data..."
 cd /dashboard && tar -czf "/tmp/${BACKUP_FILE}" data/
@@ -75,6 +72,9 @@ if [ $? -ne 0 ]; then
     echo "Error: Failed to compress backup data!"
     exit 1
 fi
+
+# 恢复面板
+systemctl start nezha-dashboard
 
 # 上传到R2
 echo "Uploading backup to R2..."
