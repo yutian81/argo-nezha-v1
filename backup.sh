@@ -68,7 +68,7 @@ rm "/tmp/${BACKUP_FILE}"
 rm -rf "$BACKUP_DIR"
 
 # 删除7天前的备份
-OLD_DATE=$(date -d "7 days ago" +%Y%m%d)
+OLD_DATE=$(date -D %Y%m%d -d "7 days ago" +%Y%m%d)
 echo "Current date: $(date +%Y%m%d)"
 echo "Old date threshold: $OLD_DATE"
 
