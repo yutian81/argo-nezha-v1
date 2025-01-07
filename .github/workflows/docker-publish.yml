@@ -67,8 +67,8 @@ jobs:
       - name: Send Telegram notification
         if: steps.compare_versions.outputs.should_build == 'true'
         run: |
-          MESSAGE="New argo-nezha image pushed! 🚀\n\n"
-          MESSAGE+="Version: ${{ steps.get_latest_tag.outputs.latest_tag }}\n"
+          MESSAGE="New argo-nezha image pushed! 🚀%0A%0A"
+          MESSAGE+="Version: ${{ steps.get_latest_tag.outputs.latest_tag }}%0A"
           MESSAGE+="Image URL: https://hub.docker.com/r/${{ secrets.DOCKER_USERNAME }}/argo-nezha/tags"
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
