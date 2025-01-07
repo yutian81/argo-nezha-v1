@@ -34,7 +34,17 @@ jobs:
       - name: Compare versions
         id: compare_versions
         run: |
-          if [[ "$(echo -e "${{ steps.get_latest_tag.outputs.latest_tag }}\n${{ steps.get_current_version.outputs.current_tag }}" | sort -V | tail -n 1)" == "${{ steps.get_latest_tag.outputs.latest_tag }}" ]]; then
+          LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
+          CURRENT_TAG="${{ steps.get_current_version.outputs.current_tag }}"
+
+          # 去掉版本号中的 "v" 前缀
+          LATEST_VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
+          CURRENT_VERSION=$(echo "$CURRENT_TAG" | sed 's/^v//')
+
+          # 使用 sort -V 比较版本号
+          HIGHER_VERSION=$(echo -e "$LATEST_VERSION\n$CURRENT_VERSION" | sort -V | tail -n 1)
+
+          if [[ "$HIGHER_VERSION" == "$LATEST_VERSION" && "$LATEST_VERSION" != "$CURRENT_VERSION" ]]; then
             echo "New version available, continuing..."
             echo "should_build=true" >> $GITHUB_OUTPUT
           else
