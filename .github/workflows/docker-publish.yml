@@ -34,7 +34,7 @@ jobs:
       - name: Compare versions
         id: compare_versions
         run: |
-          if [[ "${{ steps.get_latest_tag.outputs.latest_tag }}" > "${{ steps.get_current_version.outputs.current_tag }}" ]]; then
+          if [[ "$(echo -e "${{ steps.get_latest_tag.outputs.latest_tag }}\n${{ steps.get_current_version.outputs.current_tag }}" | sort -V | tail -n 1)" == "${{ steps.get_latest_tag.outputs.latest_tag }}" ]]; then
             echo "New version available, continuing..."
             echo "should_build=true" >> $GITHUB_OUTPUT
           else
