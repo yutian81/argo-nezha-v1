@@ -1,75 +1,47 @@
 #!/bin/sh
 
-# 检查必要的环境变量
-if [ -z "$R2_ACCESS_KEY_ID" ] || [ -z "$R2_SECRET_ACCESS_KEY" ] || [ -z "$R2_ENDPOINT_URL" ] || [ -z "$R2_BUCKET_NAME" ]; then
-    echo "Warning: R2 environment variables are not set, skipping backup/restore"
-else
-    # 配置R2环境变量
-    export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-    export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
-    export AWS_DEFAULT_REGION="auto"
-    export AWS_ENDPOINT_URL="$R2_ENDPOINT_URL"
-    export BUCKET_NAME="$R2_BUCKET_NAME"
+# 设置默认值
+ARGO_DOMAIN=${ARGO_DOMAIN:-""}
+CF_TOKEN=${CF_TOKEN:-""}
 
-    # 尝试从R2恢复最新备份
-    echo "Checking for latest backup in R2..."
-    LATEST_BACKUP=$(aws s3 ls "s3://${BUCKET_NAME}/backups/nezha_backup_" | sort | tail -n 1 | awk '{print $4}')
+# 配置定时备份任务
+echo "Setting up backup cron job..."
+echo "0 2,14 * * * /backup.sh backup >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root
 
-    if [ ! -z "$LATEST_BACKUP" ]; then
-        echo "Found backup: ${LATEST_BACKUP}"
-        echo "Downloading and restoring backup..."
-        aws s3 cp "s3://${BUCKET_NAME}/backups/${LATEST_BACKUP}" /tmp/
-        rm -rf /dashboard/data/*
-        cd /dashboard && tar -xzf "/tmp/${LATEST_BACKUP}"
-        rm "/tmp/${LATEST_BACKUP}"
-        echo "Backup restored successfully"
-    else
-        echo "No backup found in R2, starting with fresh data directory"
-    fi
-fi
+# 尝试恢复备份
+/backup.sh restore
 
-sleep 5
-
-# 启动 crond 服务
+# 启动 crond
 echo "Starting crond ..."
 crond
-
-# 设置 agent 上报 tls: true
-# sed -i'' 's|tls: false|tls: true|g' /dashboard/data/config.yaml
 
 # 启动 dashboard app
 echo "Starting dashboard app..."
 /dashboard/app &
-
 sleep 3
 
-# 生成 $ARGO_DOMAIN 证书
-if [ -z "$ARGO_DOMAIN" ]; then
-    echo "Error: ARGO_DOMAIN is not set"
-    exit 1
+# 检查并生成证书
+if [ -n "$ARGO_DOMAIN" ]; then
+    echo "Generating certificate for domain: $ARGO_DOMAIN"
+    openssl genrsa -out /dashboard/nezha.key 2048
+    openssl req -new -subj "/CN=$ARGO_DOMAIN" -key /dashboard/nezha.key -out /dashboard/nezha.csr
+    openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha.key -out /dashboard/nezha.pem
+else
+    echo "Warning: ARGO_DOMAIN is not set, skipping certificate generation"
 fi
-openssl genrsa -out /dashboard/nezha.key 2048
-openssl req -new -subj "/CN=$ARGO_DOMAIN" -key /dashboard/nezha.key -out /dashboard/nezha.csr
-openssl x509 -req -days 36500 -in /dashboard/nezha.csr -signkey /dashboard/nezha.key -out /dashboard/nezha.pem
-
-# 启动 Caddy 2
-# echo "Starting Caddy 2..."
-# caddy run --config /etc/caddy/Caddyfile --adapter caddyfile  --watch &
 
 # 启动 Nginx
 echo "Starting nginx..."
 nginx -g "daemon off;" &
-
 sleep 3
 
-# 启动 cloudflared 隧道
-if [ -z "$CF_TOKEN" ]; then
-    echo "Error: CF_TOKEN is not set"
-    exit 1
+# 启动 cloudflared
+if [ -n "$CF_TOKEN" ]; then
+    echo "Starting cloudflared..."
+    cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" &
+else
+    echo "Warning: CF_TOKEN is not set, skipping cloudflared"
 fi
-
-echo "Starting cloudflared..."
-cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" &
 
 # 等待所有后台进程
 wait
