@@ -6,7 +6,7 @@ services:
     pull_policy: always
     restart: always
     ports:
-      - "443:443"  # 映射主机9443端口到容器443端口
-    env_file: .env  # 推荐使用 .env 文件管理变量
+      - "443:443"
+    env_file: .env  # 使用 .env 文件管理变量
     volumes:
       - ./dashboard:/dashboard/data  # 挂载数据卷（可选，持久化数据）
