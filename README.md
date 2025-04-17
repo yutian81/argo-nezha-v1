@@ -81,28 +81,6 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
      argo-nezha-v1
    ```
 
-   compose命令：
-
-   ```bash
-   version: '3.9'
-   services:
-     argo-nezha:
-       image: yutian81/argo-nezha-v1:latest
-       container_name: argo-nezha-v1
-       restart: always
-       ports:
-         - "9443:443"  # 映射主机9443端口到容器443端口
-       environment:
-         - GITHUB_TOKEN=your_github_token  # GitHub个人访问令牌
-         - GITHUB_REPO_OWNER=your_github_username  # GitHub用户名
-         - GITHUB_REPO_NAME=your_github_backup_reponame  # 备份仓库名
-         - BACKUP_BRANCH=your_github_backup_branch  # 备份分支
-         - ARGO_AUTH=your_argo_token  # Cloudflare argo Token
-         - ARGO_DOMAIN=your_domain  # Argo隧道域名
-       volumes:
-         - ./dashboard:/dashboard/data  # 挂载数据卷（可选，持久化数据）
-   ```
-
 5. **更新镜像**
    
     进入你的项目目录下(compose.yml同级)
