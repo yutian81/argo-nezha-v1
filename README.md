@@ -46,7 +46,7 @@ git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v
 通过ssh的sftp工具访问vps的`root/argo-nezha-v1`目录，修改.env 文件里的变量：
 
 ```bash
-# github设置，用于备份，BACKUP_BRANCH制定备份的分支
+# github设置，用于备份，BACKUP_BRANC是指备份的分支
 GITHUB_TOKEN=github的访问令牌
 GITHUB_REPO_OWNER=github用户名
 GITHUB_REPO_NAME=用于备份的github仓库名
