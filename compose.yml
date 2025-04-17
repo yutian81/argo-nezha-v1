@@ -3,10 +3,15 @@ services:
   argo-nezha-v1:
     image: yutian81/argo-nezha-v1:latest
     container_name: argo-nezha-v1
-    pull_policy: always
-    restart: always
+    restart: unless-stopped
     ports:
       - "443:443"
-    env_file: .env  # 使用 .env 文件管理变量
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER}
+      - GITHUB_REPO_NAME=${GITHUB_REPO_NAME}
+      - BACKUP_BRANCH=${BACKUP_BRANCH}
+      - ARGO_AUTH=${ARGO_AUTH}
+      - ARGO_DOMAIN=${ARGO_DOMAIN}
     volumes:
-      - ./dashboard:/dashboard/data  # 挂载数据卷（可选，持久化数据）
+      - ./dashboard:/dashboard/data
