@@ -77,7 +77,7 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
      -e BACKUP_BRANCH="your_github_backup_branch" \
      -e ARGO_AUTH="your_ARGO_AUTH" \
      -e ARGO_DOMAIN="your_domain" \
-     -p 9443:443 \
+     -p 443:443 \
      argo-nezha-v1
    ```
 
