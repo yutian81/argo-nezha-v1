@@ -10,12 +10,12 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
 2025-01-01
 - 修复备份的数据库可能受损的问题
 - 修复无法删除7天前备份文件的问题
-- 修改备份时间为每天2点、14点
+- 修改备份时间为每天凌晨2点
 
 ## 功能
 
 - **监控和管理**: 提供实时的系统监控和管理功能。
-- **自动备份**: 支持自动备份到 Cloudflare R2 存储。
+- **自动备份**: 支持自动备份到 github 私有仓库。
 - **安全访问**: 通过 nginx 和 Cloudflare Tunnel 提供安全的访问。
 - **自定义配置**: 支持通过环境变量进行自定义配置。
 
@@ -25,10 +25,10 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
 
 在运行项目之前，需要设置以下环境变量：
 
-- `R2_ACCESS_KEY_ID`: Cloudflare R2 访问密钥 ID。
-- `R2_SECRET_ACCESS_KEY`: Cloudflare R2 访问密钥。
-- `R2_ENDPOINT_URL`: Cloudflare R2 端点 URL。
-- `R2_BUCKET_NAME`: Cloudflare R2 存储桶名称。
+- `GITHUB_TOKEN`: github的访问令牌。
+- `GITHUB_REPO_OWNER`: github用户名。
+- `GITHUB_REPO_NAME`: 备份到github的仓库名。
+- `BACKUP_BRANCH`: github备份的分支，默认为 `nezhaV1-backup`。
 - `CF_TOKEN`: Cloudflare Tunnel 令牌。
 - `ARGO_DOMAIN`: 对外访问的域名。
 
@@ -64,10 +64,10 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
 
    ```bash
    docker run -d \
-     -e R2_ACCESS_KEY_ID="your_access_key_id" \
-     -e R2_SECRET_ACCESS_KEY="your_secret_access_key" \
-     -e R2_ENDPOINT_URL="your_endpoint_url" \
-     -e R2_BUCKET_NAME="your_bucket_name" \
+     -e GITHUB_TOKEN="your_github_token" \
+     -e GITHUB_REPO_OWNER="your_github_username" \
+     -e GITHUB_REPO_NAME="your_github_backup_reponame" \
+     -e BACKUP_BRANCH="your_github_backup_branch" \
      -e CF_TOKEN="your_cf_token" \
      -e ARGO_DOMAIN="your_domain" \
      -p 443:443 \
@@ -84,7 +84,7 @@ dashboard 右上角复制安装命令即可
 
 ## 备份和恢复
 
-项目支持自动备份到 Cloudflare R2 存储，并在启动时尝试恢复最新备份。备份脚本 `/backup.sh` 会在每天凌晨 2 点执行。
+项目支持自动备份到 Github 私有仓库，并在启动时尝试恢复最新备份。备份脚本 `/backup.sh` 会在每天凌晨 2 点执行。
 
 ## 许可证
 
