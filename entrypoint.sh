@@ -2,7 +2,7 @@
 
 # 设置默认值
 ARGO_DOMAIN=${ARGO_DOMAIN:-""}
-CF_TOKEN=${CF_TOKEN:-""}
+ARGO_AUTH=${ARGO_AUTH:-""}
 
 # 配置定时备份任务（北京时间每天凌晨2点）
 echo "设置自动备份任务"
@@ -32,11 +32,11 @@ nginx -g "daemon off;" &
 sleep 3
 
 # 启动 cloudflared
-if [ -n "$CF_TOKEN" ]; then
+if [ -n "$ARGO_AUTH" ]; then
     echo "正在启动 cloudflared..."
-    cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" &
+    cloudflared --no-autoupdate tunnel run --protocol http2 --token "$ARGO_AUTH" &
 else
-    echo "警告: 未设置CF_TOKEN，正在跳过执行 cloudflared"
+    echo "警告: 未设置 ARGO_AUTH，正在跳过执行 cloudflared"
 fi
 
 # 等待所有后台进程
