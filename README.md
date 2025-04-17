@@ -60,6 +60,11 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
    docker build -t argo-nezha .
    ```
 
+3. **拉取镜像**
+   ```bash
+   docker pull yutian81/argo-nezha-v1:latest
+   ```
+
 3. **运行 Docker 容器**:
 
    ```bash
@@ -70,8 +75,8 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
      -e BACKUP_BRANCH="your_github_backup_branch" \
      -e CF_TOKEN="your_cf_token" \
      -e ARGO_DOMAIN="your_domain" \
-     -p 443:443 \
-     argo-nezha
+     -p 9443:443 \
+     argo-nezha-v1
    ```
 
 ## Dashboard 配置
