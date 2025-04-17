@@ -1,0 +1,24 @@
+admin_template: admin-dist
+agent_secret_key: 
+avg_ping_count: 2
+cover: 1
+https: {}
+install_host: 
+ip_change_notification_group_id: 0
+jwt_secret_key: 
+jwt_timeout: 1
+language: zh_CN
+listen_port: 8008
+location: Asia/Shanghai
+site_name: Nezha-V1-CCS
+tls: true
+user_template: user-dist
+oauth2:
+  GitHub:
+    client_id: "a-unique-id"
+    client_secret: "a-unique-secret"
+    endpoint:
+      auth_url: "https://github.com/login/oauth/authorize"
+      token_url: "https://github.com/login/oauth/access_token"
+    user_info_url: "https://api.github.com/user"
+    user_id_path: "id"
