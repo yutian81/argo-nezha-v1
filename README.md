@@ -2,10 +2,14 @@
 
 本项目修改自 [ssfun/argo-nezha](https://github.com/ssfun/argo-nezha)，原版采用 cf-r2 作为备份方案，我改成了采用 `github 私有仓库`作为备份方案
 
+----
+
 ## 项目特点：
 
 - **自动备份**: 支持自动备份到 github 私有仓库
 - **安全访问**: 通过 nginx 和 Cloudflare Tunnel 提供安全的访问
+
+----
 
 ## 前置准备
 1. **CloudFlare开启GRPC流量代理**
@@ -29,6 +33,8 @@
     - Homepage URL: `https://用于哪吒面板的argo域名`
     - Authorization callback URL: `https://用于哪吒面板的argo域名/api/v1/oauth2/callback`
   - **记录 `Client ID` 和 `Client secrets` 备用**
+
+----
 
 ## 快速开始
 
@@ -70,6 +76,7 @@ docker compose up -d
 > 
 > **初始用户名/密码为：admin/admin**
 
+----
 
 ## 基础设置
 
@@ -91,7 +98,7 @@ docker compose up -d
 oauth2:
   GitHub:
     client_id: 改为你在前置工作中获得的 github Client ID
-    client_secret: 改为你在前置工作中获得的 github secret
+    client_secret: 改为你在前置工作中获得的 github Client secret
     # 以下代码不要动
     endpoint:
       auth_url: https://github.com/login/oauth/authorize
@@ -106,7 +113,7 @@ oauth2:
 
 同时建议点击`更新个人资料`，勾选`禁止密码登录`
 
-4. **设置前端界面背景图**
+### 设置前端界面背景图
 
 打开`系统设置`，找到`自定义代码（样式和脚本）`，输入以下代码：
 
@@ -117,7 +124,7 @@ oauth2:
 </script>
 ```
 
-5. **设置TG通知**
+### 设置TG通知
 
 只说TG通知，其他通知方式请看官方文档
 
@@ -129,6 +136,8 @@ oauth2:
   - 名称：⚡ 离线
   - 规则：`[{"type":"offline","duration":180,"cover":0}]`
 - 其他警报规则请看官方文档
+
+----
 
 ## 更新镜像
    
@@ -142,11 +151,15 @@ docker compose up -d
 
 可以将上述代码编写为 sh 文件，加入系统的 corn 计划任务，具体可以问 AI
 
+----
+
 ## 备份和恢复
 
 项目支持自动备份到 Github 私有仓库，并在启动时尝试恢复最新备份
 
 备份脚本 `/backup.sh` 会在每天凌晨 2 点执行。
+
+----
 
 ## 许可证
 
