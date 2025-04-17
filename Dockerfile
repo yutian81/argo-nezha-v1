@@ -28,10 +28,10 @@ EXPOSE 8008
 
 ENV ARGO_DOMAIN="" \
     CF_TOKEN="" \
-    R2_ACCESS_KEY_ID="" \
-    R2_BUCKET_NAME="" \
-    R2_ENDPOINT_URL="" \
-    R2_SECRET_ACCESS_KEY=""
+    GITHUB_TOKEN="" \
+    GITHUB_REPO_OWNER="" \
+    GITHUB_REPO_NAME="" \
+    BACKUP_BRANCH=""
 
 COPY backup.sh /backup.sh
 COPY entrypoint.sh /entrypoint.sh
