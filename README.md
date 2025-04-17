@@ -1,109 +1,152 @@
 # Argo Nezha Dashboard V1
 
-Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项目，提供了一个强大的监控和管理界面。本项目使用 Docker 进行部署，并集成了 Cloudflare Tunnel 来提供安全的访问，项目优势：
+本项目修改自 [ssfun/argo-nezha](https://github.com/ssfun/argo-nezha)，原版采用 cf-r2 作为备份方案，我改成了采用 `github 私有仓库`作为备份方案
 
-1. 不暴露公网 IP，安全可靠
-2. 单栈转双栈，纯 IPv6 环境也能使用
-3. 自动备份，启动时自动还原备份文件，方便在线上容器平台使用
+## 项目特点：
 
-## 最近更新
-2025-01-01
-- 修复备份的数据库可能受损的问题
-- 修复无法删除7天前备份文件的问题
-- 修改备份时间为每天凌晨2点
+- **自动备份**: 支持自动备份到 github 私有仓库
+- **安全访问**: 通过 nginx 和 Cloudflare Tunnel 提供安全的访问
 
-## 功能
+## 前置准备
+1. **CloudFlare开启GRPC流量代理**
 
-- **监控和管理**: 提供实时的系统监控和管理功能。
-- **自动备份**: 支持自动备份到 github 私有仓库。
-- **安全访问**: 通过 nginx 和 Cloudflare Tunnel 提供安全的访问。
-- **自定义配置**: 支持通过环境变量进行自定义配置。
+2. **设置 Tunnel Public hostname**
+
+  - Type: `HTTPS`
+  - URL: `localhost:443`
+  - Additional application settings
+    - TLS
+      - No TLS Verify: `on`
+      - HTTP2 connection: `on`
+  - **记录 argo 域名和 token 备用**
+
+3. **设置 GitHub Apps**
+
+  - 入口地址：https://github.com/settings/developers
+  - 点击右上角 `new OAuth app` 开始新建
+  - 填写以下参数：
+    - Application name：`nezha_v1`
+    - Homepage URL: `https://用于哪吒面板的argo域名`
+    - Authorization callback URL: `https://用于哪吒面板的argo域名/api/v1/oauth2/callback`
+  - **记录 `Client ID` 和 `Client secrets` 备用**
 
 ## 快速开始
 
-### 环境变量
+### VPS 平台
+1. **克隆项目**
 
-在运行项目之前，需要设置以下环境变量：
+```bash
+git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v1.git
+```
 
-- `GITHUB_TOKEN`: github的访问令牌。
-- `GITHUB_REPO_OWNER`: github用户名。
-- `GITHUB_REPO_NAME`: 备份到github的仓库名。
-- `BACKUP_BRANCH`: github备份的分支，默认为 `nezhaV1-backup`。
-- `ARGO_AUTH`: Cloudflare Argo Tunnel 令牌。
-- `ARGO_DOMAIN`: 对外访问的域名。
+> 注意，我修改的项目在我仓库的 [github 分支](https://github.com/yutian81/argo-nezha-v1/tree/github)
 
-### Tunnel 设置
+2. **修改 .env 环境变量**
 
-在运行项目之前，需要
-1. **CloudFlare开启GRPC流量代理**
-2. **设置 Tunnel Public hostname**
+通过ssh的sftp工具访问vps的`root/argo-nezha-v1`目录，修改这些变量：
 
-  - Type: HTTPS
-  - URL: localhost:443
-  - Additional application settings
-    - TLS
-      - No TLS Verify on
-      - HTTP2 connection on
+```bash
+# github设置，用于备份，BACKUP_BRANCH制定备份的分支
+GITHUB_TOKEN=github的访问令牌
+GITHUB_REPO_OWNER=github用户名
+GITHUB_REPO_NAME=用于备份的github仓库名
+BACKUP_BRANCH=用于备份的github仓库分支
+# argo设置
+ARGO_AUTH='Cloudflare Argo Tunnel 令牌'，json格式的秘钥必须用 `''`包裹
+ARGO_DOMAIN=面板域名
+```
 
-### 构建和运行
+3. **拉取镜像并启动**
 
-1. **克隆仓库**:
+依次执行以下命令:
 
-   ```bash
-   git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v1.git
-   cd argo-nezha-v1
-   ```
+```bash
+cd argo-nezha-v1
+docker compose pull
+docker compose up -d
+```
 
-2. **构建本地 Docker 镜像**: 
+> **面板安装完成，访问 ARGO_DOMAIN 即可访问自己的面板**
+> 
+> **初始用户名/密码为：admin/admin**
 
-   ```bash
-   docker build -t argo-nezha-v1 .
-   ```
 
-   > 构建远程镜像运行 action 文件即可，需要dockhub的用户名和个人令牌
-   > 
+## 基础设置
 
-3. **拉取镜像**
-   ```bash
-   docker pull yutian81/argo-nezha-v1:latest
-   ```
+### agent 设置
 
-3. **运行 Docker 容器**
+1. **Agent对接地址【域名/IP:端口】**：`面板域名:443`
 
-   docke命令：
+2. **Agent 使用 TLS 连接**：打 √
+
+3. **前端真实IP请求头**：nz-realip （也可以不设置）
+
+### 绑定 github 登录
+
+1. **访问 vps 目录：`/root/argo-nezha-v1/dashboard`**
+
+2. **修改 `config.yaml` 文件，在最后面加上以下代码：**
+
+```yaml
+oauth2:
+  GitHub:
+    client_id: 改为你在前置工作中获得的 github Client ID
+    client_secret: 改为你在前置工作中获得的 github secret
+    # 以下代码不要动
+    endpoint:
+      auth_url: https://github.com/login/oauth/authorize
+      token_url: https://github.com/login/oauth/access_token
+    user_id_path: id
+    user_info_url: https://api.github.com/user
+```
+
+3. **登录哪吒管理后台，打开个人设置**
+
+在头像右侧找到 `Oauth2 bindings`，点击绑定，即可以 github 账户登录
+
+同时建议点击`更新个人资料`，勾选`禁止密码登录`
+
+4. **设置前端界面背景图**
+
+打开`系统设置`，找到`自定义代码（样式和脚本）`，输入以下代码：
+
+```html
+<script>
+    window.CustomBackgroundImage = "改为你喜欢的背景图直链，以 http(s) 开头";
+    window.CustomDesc = "VPS探针";
+</script>
+```
+
+5. **设置TG通知**
+
+只说TG通知，其他通知方式请看官方文档
+
+- 打开`系统设置` —— `通知`，点 + 号创建
+- 名称：TG 通知
+- URL：`https://api.telegram.org/bot<tg token>/sendMessage?chat_id=<tg id>&text=#NEZHA#`,替换 <> 及其中的内容
+- 跳转到 `警报规则`，点 + 号创建
+- 离线警报
+  - 名称：⚡ 离线
+  - 规则：`[{"type":"offline","duration":180,"cover":0}]`
+- 其他警报规则请看官方文档
+
+## 更新镜像
    
-   ```bash
-   docker run -d \
-     -e GITHUB_TOKEN="your_github_token" \
-     -e GITHUB_REPO_OWNER="your_github_username" \
-     -e GITHUB_REPO_NAME="your_github_backup_reponame" \
-     -e BACKUP_BRANCH="your_github_backup_branch" \
-     -e ARGO_AUTH="your_ARGO_AUTH" \
-     -e ARGO_DOMAIN="your_domain" \
-     -p 443:443 \
-     argo-nezha-v1
-   ```
+登录 vps，依次运行以下命令：
 
-5. **更新镜像**
-   
-    进入你的项目目录下(compose.yml同级)
-    
-    ```bash
-    docker compose pull
-    docker compose up -d 
-    ```
+```bash
+cd argo-nezha-v1
+docker compose pull
+docker compose up -d
+```
 
-## Dashboard 配置
-Agent对接地址【域名/IP:端口】
-
-Public hostname:443
-
-## Agent 安装
-dashboard 右上角复制安装命令即可
+可以将上述代码编写为 sh 文件，加入系统的 corn 计划任务，具体可以问 AI
 
 ## 备份和恢复
 
-项目支持自动备份到 Github 私有仓库，并在启动时尝试恢复最新备份。备份脚本 `/backup.sh` 会在每天凌晨 2 点执行。
+项目支持自动备份到 Github 私有仓库，并在启动时尝试恢复最新备份
+
+备份脚本 `/backup.sh` 会在每天凌晨 2 点执行。
 
 ## 许可证
 
