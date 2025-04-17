@@ -1,109 +1,121 @@
 #!/bin/sh
 
 # 设置默认值
-R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-""}
-R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-""}
-R2_ENDPOINT_URL=${R2_ENDPOINT_URL:-""}
-R2_BUCKET_NAME=${R2_BUCKET_NAME:-""}
+GITHUB_TOKEN=${GITHUB_TOKEN:-""}
+GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER:-""}
+GITHUB_REPO_NAME=${GITHUB_REPO_NAME:-""}
+BACKUP_BRANCH=${BACKUP_BRANCH:-"nezhaV1-backup"}
 
 # 检查必要的环境变量
-if [ -z "$R2_ACCESS_KEY_ID" ] || [ -z "$R2_SECRET_ACCESS_KEY" ] || [ -z "$R2_ENDPOINT_URL" ] || [ -z "$R2_BUCKET_NAME" ]; then
-    echo "Warning: R2 environment variables are not set, skipping backup/restore"
+if [ -z "$GITHUB_TOKEN" ] || [ -z "$GITHUB_REPO_OWNER" ] || [ -z "$GITHUB_REPO_NAME" ]; then
+    echo "警告: 未设置GitHub环境变量，正在跳过备份/还原"
     exit 0
 fi
 
-# R2配置
-export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
-export AWS_DEFAULT_REGION="auto"
-export AWS_ENDPOINT_URL="$R2_ENDPOINT_URL"
-export BUCKET_NAME="$R2_BUCKET_NAME"
+# GitHub配置
+export GIT_AUTHOR_NAME="[Auto] DB Backup"
+export GIT_AUTHOR_EMAIL="backup@nezhav1.com"
+export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+# 临时目录
+TEMP_DIR=$(mktemp -d)
 
 # 恢复功能
 restore_backup() {
-    echo "Checking for latest backup in R2..."
-    LATEST_BACKUP=$(aws s3 ls "s3://${BUCKET_NAME}/backups/nezha_backup_" | sort | tail -n 1 | awk '{print $4}' || echo "")
+    echo "正在检查GitHub repo中的最新备份"
+    # 获取最新的备份提交
+    LATEST_BACKUP_COMMIT=$(git ls-remote --heads "https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git" "$BACKUP_BRANCH" | awk '{print $1}')
     
-    if [ -n "$LATEST_BACKUP" ]; then
-        echo "Found backup: ${LATEST_BACKUP}"
-        echo "Downloading and restoring backup..."
-        aws s3 cp "s3://${BUCKET_NAME}/backups/${LATEST_BACKUP}" /tmp/ || true
-        if [ -f "/tmp/${LATEST_BACKUP}" ]; then
+    if [ -n "$LATEST_BACKUP_COMMIT" ]; then
+        echo "找到备份提交: ${LATEST_BACKUP_COMMIT}"
+        echo "正在下载并还原备份"
+        git clone --branch "$BACKUP_BRANCH" --single-branch "https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git" "$TEMP_DIR/backup_repo" || true
+        if [ -d "$TEMP_DIR/backup_repo" ]; then
             rm -rf /dashboard/data/*
-            cd /dashboard && tar -xzf "/tmp/${LATEST_BACKUP}"
-            rm "/tmp/${LATEST_BACKUP}"
-            echo "Backup restored successfully"
+            cp -r "$TEMP_DIR/backup_repo/data/." /dashboard/data/
+            echo "备份已成功恢复"
         else
-            echo "Failed to download backup"
+            echo "无法克隆备份仓库"
         fi
     else
-        echo "No backup found in R2, starting with fresh data directory"
+        echo "在GitHub repo中找不到备份，正在从新的数据目录开始"
     fi
+    
+    # 清理临时目录
+    rm -rf "$TEMP_DIR/backup_repo"
 }
 
 # 备份功能
 create_backup() {
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    BACKUP_FILE="nezha_backup_${TIMESTAMP}.tar.gz"
-    BACKUP_DIR="/tmp/nezha_backup_${TIMESTAMP}"
-
-    # 创建备份目录
-    mkdir -p "${BACKUP_DIR}/data"
-
-    # 备份 SQLite 数据库
-    echo "Backing up SQLite database..."
-    sqlite3 "/dashboard/data/sqlite.db" "VACUUM INTO '${BACKUP_DIR}/data/sqlite.db'"
+    BACKUP_DIR="$TEMP_DIR/backup_$TIMESTAMP"
+    mkdir -p "$BACKUP_DIR/data"
+    echo "正在备份SQLite数据库..."
+    sqlite3 "/dashboard/data/sqlite.db" "VACUUM INTO '$BACKUP_DIR/data/sqlite.db'"
     if [ $? -ne 0 ]; then
-        echo "Error: Failed to backup SQLite database!"
+        echo "错误: 备份SQLite数据库失败"
         rm -rf "$BACKUP_DIR"
         return 1
     fi
-
+    
     # 备份 config.yaml
-    echo "Backing up config.yaml..."
-    cp "/dashboard/data/config.yaml" "${BACKUP_DIR}/data/config.yaml"
+    echo "正在备份config.yaml"
+    cp "/dashboard/data/config.yaml" "$BACKUP_DIR/data/config.yaml"
     if [ $? -ne 0 ]; then
-        echo "Error: Failed to backup config.yaml!"
+        echo "错误: 备份config.yaml失败"
         rm -rf "$BACKUP_DIR"
         return 1
     fi
-
-    # 压缩备份文件
-    echo "Compressing backup files..."
-    tar -czf "/tmp/${BACKUP_FILE}" -C "$BACKUP_DIR" .
+    
+    # 初始化Git仓库并提交
+    echo "正在创建Git备份"
+    git init "$BACKUP_DIR"
+    cd "$BACKUP_DIR" || return 1
+    git remote add origin "https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git"
+    git checkout -b "$BACKUP_BRANCH"
+    git add .
+    git commit -m "Backup $TIMESTAMP"
+    
+    # 推送到GitHub
+    echo "正在推送备份到GitHub..."
+    git push --force origin "$BACKUP_BRANCH"
     if [ $? -ne 0 ]; then
-        echo "Error: Failed to compress backup files!"
+        echo "错误: 推送备份到GitHub失败"
+        cd - || return 1
         rm -rf "$BACKUP_DIR"
         return 1
     fi
-
-    # 上传到 R2
-    echo "Uploading backup to R2..."
-    aws s3 cp "/tmp/${BACKUP_FILE}" "s3://${BUCKET_NAME}/backups/${BACKUP_FILE}"
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to upload backup to R2!"
-        rm "/tmp/${BACKUP_FILE}"
-        rm -rf "$BACKUP_DIR"
-        return 1
-    fi
-
-    # 清理临时文件
-    rm "/tmp/${BACKUP_FILE}"
-    rm -rf "$BACKUP_DIR"
-
-    # 删除7天前的备份
+    
+    # 清理7天前的备份文件（单分支模式）
+    echo "正在清理7天前的旧备份文件"
     OLD_DATE=$(date -d "7 days ago" +%Y%m%d)
-    echo "Cleaning up old backups before: $OLD_DATE"
-    aws s3 ls "s3://${BUCKET_NAME}/backups/" | grep "nezha_backup_" | while read -r line; do
-        backup_file=$(echo "$line" | awk '{print $4}')
-        backup_date=$(echo "$backup_file" | grep -o "[0-9]\{8\}")
-        if [ ! -z "$backup_date" ] && [ "$backup_date" -lt "$OLD_DATE" ]; then
-            echo "Deleting old backup: $backup_file"
-            aws s3 rm "s3://${BUCKET_NAME}/backups/$backup_file"
+    
+    # 克隆当前备份分支到临时目录
+    CLEANUP_DIR="$TEMP_DIR/cleanup_repo"
+    git clone --branch "$BACKUP_BRANCH" --single-branch "https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git" "$CLEANUP_DIR" || return 1
+    cd "$CLEANUP_DIR" || return 1
+    find data -type f -name "*.*" | while read file; do
+        file_date=$(stat -c %y "$file" | cut -d' ' -f1 | tr -d '-')
+        if [ ! -z "$file_date" ] && [ "$file_date" -lt "$OLD_DATE" ]; then
+            git rm "$file"
+            echo "已删除旧备份文件: $file (修改日期: $file_date)"
         fi
     done
     
-    echo "Backup process completed successfully!"
+    # 如果有文件被删除，则提交更改
+    if [ -n "$(git status --porcelain)" ]; then
+        git commit -m "清理7天前的旧备份文件"
+        git push origin "$BACKUP_BRANCH"
+        echo "已清理旧备份文件并更新分支"
+    else
+        echo "没有需要清理的旧备份文件"
+    fi
+    
+    # 清理临时文件
+    cd - || return 1
+    rm -rf "$BACKUP_DIR" "$CLEANUP_DIR"
+    echo "已成功完成备份和清理"
 }
 
 # 根据参数执行不同的操作
@@ -119,3 +131,6 @@ case "$1" in
         exit 1
         ;;
 esac
+
+# 清理临时目录
+rm -rf "$TEMP_DIR"
