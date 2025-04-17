@@ -43,7 +43,7 @@ git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v
 
 2. **修改 .env 环境变量**
 
-通过ssh的sftp工具访问vps的`root/argo-nezha-v1`目录，修改这些变量：
+通过ssh的sftp工具访问vps的`root/argo-nezha-v1`目录，修改.env 文件里的变量：
 
 ```bash
 # github设置，用于备份，BACKUP_BRANCH制定备份的分支
