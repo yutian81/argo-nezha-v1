@@ -1,9 +1,18 @@
-name: Publish Docker Image
+name: 构建哪吒V1的docker镜像
 
 on:
   workflow_dispatch:  # 手动触发
   schedule:
-    - cron: '0 1 * * *'  # Asia/Shanghai 时间10点（UTC 时间1:00）
+    - cron: '0 1 * * *'  # Asia/Shanghai 时间9点（UTC 时间1:00）
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  DOCKER_IMAGE_NAME: "argo-nezha-v1"
+  GITHUB_REPO: "nezhahq/nezha"
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+  
 
 jobs:
   build-and-push:
@@ -16,19 +25,19 @@ jobs:
       - name: Get latest release tag
         id: get_latest_tag
         run: |
-          LATEST_TAG=$(curl -s https://api.github.com/repos/nezhahq/nezha/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+          LATEST_TAG=$(curl -s https://api.github.com/repos/${{ env.GITHUB_REPO }}/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
           echo "Latest tag: $LATEST_TAG"
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
       - name: Get current Docker image version
         id: get_current_version
         run: |
-          # 从 Docker Hub 获取当前镜像的版本号
-          CURRENT_TAG=$(curl -s https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/argo-nezha/tags/ | jq -r '.results[] | select(.name != "latest") | .name' | sort -V | tail -n 1)
+          CURRENT_TAG=$(curl -s "https://hub.docker.com/v2/repositories/${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}/tags/" | \
+                       jq -r '.results[] | select(.name != "latest") | .name' | sort -V | tail -n 1)
           if [ -z "$CURRENT_TAG" ]; then
-            CURRENT_TAG="0.0.0"  # 如果没有找到版本号，默认使用 0.0.0
+            CURRENT_TAG="0.0.0"
           fi
-          echo "Current Docker image version: $CURRENT_TAG"
+          echo "当前Docker镜像版本: $CURRENT_TAG"
           echo "current_tag=$CURRENT_TAG" >> $GITHUB_OUTPUT
 
       - name: Compare versions
@@ -37,18 +46,16 @@ jobs:
           LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
           CURRENT_TAG="${{ steps.get_current_version.outputs.current_tag }}"
 
-          # 去掉版本号中的 "v" 前缀
           LATEST_VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
           CURRENT_VERSION=$(echo "$CURRENT_TAG" | sed 's/^v//')
 
-          # 使用 sort -V 比较版本号
           HIGHER_VERSION=$(echo -e "$LATEST_VERSION\n$CURRENT_VERSION" | sort -V | tail -n 1)
 
           if [[ "$HIGHER_VERSION" == "$LATEST_VERSION" && "$LATEST_VERSION" != "$CURRENT_VERSION" ]]; then
-            echo "New version available, continuing..."
+            echo "新版本可用，继续..."
             echo "should_build=true" >> $GITHUB_OUTPUT
           else
-            echo "No new version available, stopping..."
+            echo "没有可用的新版本，停止..."
             echo "should_build=false" >> $GITHUB_OUTPUT
           fi
 
@@ -60,8 +67,8 @@ jobs:
         if: steps.compare_versions.outputs.should_build == 'true'
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
         if: steps.compare_versions.outputs.should_build == 'true'
@@ -71,30 +78,32 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/argo-nezha:latest
-            ${{ secrets.DOCKER_USERNAME }}/argo-nezha:${{ steps.get_latest_tag.outputs.latest_tag }}
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.get_latest_tag.outputs.latest_tag }}
 
       - name: Send Telegram notification
         if: steps.compare_versions.outputs.should_build == 'true'
+        env:
+          DOCKER_IMAGE_URL: https://hub.docker.com/r/${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}/tags
         run: |
-          MESSAGE="New argo-nezha image pushed! 🚀%0A%0A"
-          MESSAGE+="Version: ${{ steps.get_latest_tag.outputs.latest_tag }}%0A"
-          MESSAGE+="Image URL: https://hub.docker.com/r/${{ secrets.DOCKER_USERNAME }}/argo-nezha/tags"
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          MESSAGE="新的 ${{ env.DOCKER_IMAGE_NAME }} 镜像已推送 🚀%0A%0A"
+          MESSAGE+="版本: ${{ steps.get_latest_tag.outputs.latest_tag }}%0A"
+          MESSAGE+="镜像地址: $DOCKER_IMAGE_URL"
+          curl -s -X POST "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ env.TELEGRAM_CHAT_ID }}" \
             -d text="$MESSAGE"
             
   cleanup-runs:
     runs-on: ubuntu-latest
-    needs: build-and-push  # 确保在 build-and-push 任务完成后执行
+    needs: build-and-push
     permissions:
-      actions: write  # 需要 write 权限来删除运行日志
-      contents: read  # 需要 read 权限来访问仓库信息
+      actions: write
+      contents: read
     steps:
       - name: Delete old workflow runs
         uses: Mattraks/delete-workflow-runs@v2
         with:
-          token: ${{ secrets.GH_TOKEN }}  # 使用默认的 GITHUB_TOKEN
-          repository: ${{ github.repository }}  # 当前仓库
-          retain_days: 7  # 保留最近 7 天的运行日志
-          keep_minimum_runs: 6  # 至少保留 6 条运行日志
+          token: ${{ secrets.GITHUB_TOKEN }}  # 修正：使用标准的GITHUB_TOKEN
+          repository: ${{ github.repository }}
+          retain_days: 7
+          keep_minimum_runs: 6
