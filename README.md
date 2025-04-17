@@ -50,14 +50,14 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
 1. **克隆仓库**:
 
    ```bash
-   git clone https://github.com/yourusername/argo-nezha.git
-   cd nezha-dashboard
+   git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v1.git
+   cd argo-nezha-v1
    ```
 
 2. **构建本地 Docker 镜像**: 
 
    ```bash
-   docker build -t argo-nezha .
+   docker build -t argo-nezha-v1 .
    ```
 
    > 构建远程镜像运行 action 文件即可，需要dockhub的用户名和个人令牌
