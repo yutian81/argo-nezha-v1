@@ -1,6 +1,6 @@
 version: '3.9'
 services:
-  argo-nezha:
+  argo-nezha-v1:
     image: yutian81/argo-nezha-v1:latest
     container_name: argo-nezha-v1
     pull_policy: always
