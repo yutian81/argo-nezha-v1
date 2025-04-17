@@ -27,7 +27,7 @@ RUN mkdir -p /dashboard/data && chmod -R 777 /dashboard
 EXPOSE 8008
 
 ENV ARGO_DOMAIN="" \
-    CF_TOKEN="" \
+    ARGO_AUTH="" \
     GITHUB_TOKEN="" \
     GITHUB_REPO_OWNER="" \
     GITHUB_REPO_NAME="" \
