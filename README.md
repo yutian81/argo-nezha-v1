@@ -96,10 +96,10 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
          - GITHUB_REPO_OWNER=your_github_username  # GitHub用户名
          - GITHUB_REPO_NAME=your_github_backup_reponame  # 备份仓库名
          - BACKUP_BRANCH=your_github_backup_branch  # 备份分支
-         - CF_TOKEN=your_cf_token  # Cloudflare Token
+         - ARGO_AUTH=your_argo_token  # Cloudflare argo Token
          - ARGO_DOMAIN=your_domain  # Argo隧道域名
-       volumes:
-         - ./dashboard:/dashboard/data  # 挂载数据卷（可选，持久化数据）
+       # volumes:
+         # - ./dashboard:/dashboard/data  # 挂载数据卷（可选，持久化数据）
    ```
 
 5. **更新镜像**
