@@ -54,11 +54,14 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
    cd nezha-dashboard
    ```
 
-2. **构建 Docker 镜像**:
+2. **构建本地 Docker 镜像**: 
 
    ```bash
    docker build -t argo-nezha .
    ```
+
+   > 构建远程镜像运行 action 文件即可，需要dockhub的用户名和个人令牌
+   > 
 
 3. **拉取镜像**
    ```bash
