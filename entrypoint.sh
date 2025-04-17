@@ -6,7 +6,7 @@ CF_TOKEN=${CF_TOKEN:-""}
 
 # 配置定时备份任务（北京时间每天凌晨2点）
 echo "设置自动备份任务"
-echo "0 18 * * * /backup.sh backup >> /dashboard/backup.log 2>&1" > /var/spool/cron/crontabs/root
+echo "0 2 * * * /backup.sh backup >> /dashboard/backup.log 2>&1" > /var/spool/cron/crontabs/root
 /backup.sh restore # 尝试恢复备份
 echo "正在启动 crond"  # 启动 crond
 crond
