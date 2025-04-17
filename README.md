@@ -29,7 +29,7 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
 - `GITHUB_REPO_OWNER`: github用户名。
 - `GITHUB_REPO_NAME`: 备份到github的仓库名。
 - `BACKUP_BRANCH`: github备份的分支，默认为 `nezhaV1-backup`。
-- `CF_TOKEN`: Cloudflare Tunnel 令牌。
+- `ARGO_AUTH`: Cloudflare Argo Tunnel 令牌。
 - `ARGO_DOMAIN`: 对外访问的域名。
 
 ### Tunnel 设置
@@ -74,7 +74,7 @@ Nezha Dashboard 是一个基于 [Nezha](https://github.com/nezhahq/nezha) 的项
      -e GITHUB_REPO_OWNER="your_github_username" \
      -e GITHUB_REPO_NAME="your_github_backup_reponame" \
      -e BACKUP_BRANCH="your_github_backup_branch" \
-     -e CF_TOKEN="your_cf_token" \
+     -e ARGO_AUTH="your_ARGO_AUTH" \
      -e ARGO_DOMAIN="your_domain" \
      -p 9443:443 \
      argo-nezha-v1
