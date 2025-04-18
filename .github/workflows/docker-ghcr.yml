@@ -2,8 +2,8 @@ name: nezha-v1-docker-ghcr
 
 on:
   workflow_dispatch:  # 手动触发
-  schedule:
-    - cron: '0 20 * * 6'  # Asia/Shanghai 每周天凌晨4点
+  # schedule:
+  #   - cron: '0 20 * * 6'  # Asia/Shanghai 每周天凌晨4点
 
 env:
   GHCR_USERNAME: ${{ github.actor }}  # 使用GitHub用户名
