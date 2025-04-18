@@ -1,5 +1,4 @@
-name: 构建哪吒V1的docker镜像
-
+name: nezha-v1-docker-dockhub
 on:
   workflow_dispatch:  # 手动触发
   schedule:
