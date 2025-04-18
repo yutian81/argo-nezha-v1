@@ -7,7 +7,7 @@
 ## 项目特点：
 
 - **自动备份**: 支持自动备份到 github 私有仓库
-- **安全访问**: 通过 nginx 和 Cloudflare Tunnel 提供安全的访问
+- **安全访问**: 通过 caddy 和 Cloudflare Tunnel 提供安全的访问
 
 ----
 
