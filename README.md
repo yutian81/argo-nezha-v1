@@ -58,7 +58,7 @@ GITHUB_REPO_OWNER=github用户名
 GITHUB_REPO_NAME=用于备份的github仓库名
 BACKUP_BRANCH=用于备份的github仓库分支
 # argo设置
-ARGO_AUTH='Cloudflare Argo Tunnel 令牌'，json格式的秘钥必须用 `''`包裹
+ARGO_AUTH='Cloudflare Argo Tunnel 令牌'，json格式的秘钥必须用英文单引号包裹
 ARGO_DOMAIN=面板域名
 ```
 
