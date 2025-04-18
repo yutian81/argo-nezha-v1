@@ -159,6 +159,18 @@ docker compose up -d
 
 备份脚本 `/backup.sh` 会在每天凌晨 2 点执行。
 
+**ssh 进入 `argo-nezha-v1` 目录，修改 `backup.sh` 文件开头的变量，可以执行手动备份和恢复**
+
+### 手动备份
+```bash
+cd argo-nezha-v1 && chmod +x backup.sh && ./backup.sh backup
+```
+
+### 手动恢复备份
+```bash
+cd argo-nezha-v1 && chmod +x backup.sh && ./backup.sh restore
+```
+
 ----
 
 ## 许可证
