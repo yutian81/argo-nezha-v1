@@ -5,10 +5,11 @@ GITHUB_TOKEN=${GITHUB_TOKEN:-""}
 GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER:-""}
 GITHUB_REPO_NAME=${GITHUB_REPO_NAME:-""}
 BACKUP_BRANCH=${BACKUP_BRANCH:-"nezha-v1"}
+CLONE_URL=https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git
 
 # 检查必要的环境变量
 if [ -z "$GITHUB_TOKEN" ] || [ -z "$GITHUB_REPO_OWNER" ] || [ -z "$GITHUB_REPO_NAME" ]; then
-    echo "警告: 未设置GitHub环境变量，正在跳过备份/还原"
+    echo "警告: 未设置GitHub环境变量, 正在跳过备份/还原"
     exit 0
 fi
 
@@ -21,37 +22,28 @@ export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
 # 临时目录
 TEMP_DIR=$(mktemp -d)
 
-# 恢复功能
+# 恢复功能 - 恢复最新备份
 restore_backup() {
     echo "正在检查GitHub repo中的最新备份"
-    # 获取最新的备份提交
-    LATEST_BACKUP_COMMIT=$(git ls-remote --heads "https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git" "$BACKUP_BRANCH" | awk '{print $1}')
-    
-    if [ -n "$LATEST_BACKUP_COMMIT" ]; then
-        echo "找到备份提交: ${LATEST_BACKUP_COMMIT}"
-        echo "正在下载并还原备份"
-        git clone --branch "$BACKUP_BRANCH" --single-branch "https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git" "$TEMP_DIR/backup_repo" || true
-        if [ -d "$TEMP_DIR/backup_repo" ]; then
-            echo "正在从备份恢复数据..."
-            mkdir -p dashboard/
-            rm -f dashboard/sqlite.db
-            cp "$TEMP_DIR/backup_repo/dashboard/sqlite.db" dashboard/
-            if [ -f "$TEMP_DIR/backup_repo/dashboard/config.yaml" ]; then
-                cp "$TEMP_DIR/backup_repo/dashboard/config.yaml" dashboard/
-            fi
-            echo "备份已成功恢复"
-        else
-            echo "无法克隆备份仓库"
-        fi
+    LATEST_BACKUP_COMMIT=$(git ls-remote --heads "$CLONE_URL" "$BACKUP_BRANCH" | awk '{print $1}') 
+    if git clone --depth 1 --branch "$BACKUP_BRANCH" --single-branch "$CLONE_URL" "$TEMP_DIR/backup_repo" 2>/dev/null; then
+        echo "正在从备份恢复数据..."
+        mkdir -p dashboard/
+        # 恢复最新的数据库和配置文件
+        find "$TEMP_DIR/backup_repo/dashboard" -name "sqlite.db_*" -printf "%T@ %p\n" | sort -n | tail -1 | cut -d' ' -f2- | xargs -I{} cp {} dashboard/sqlite.db 2>/dev/null
+        find "$TEMP_DIR/backup_repo/dashboard" -name "config.yaml_*" -printf "%T@ %p\n" | sort -n | tail -1 | cut -d' ' -f2- | xargs -I{} cp {} dashboard/config.yaml 2>/dev/null
+        # 验证恢复结果
+        [ -f "dashboard/sqlite.db" ] && echo "数据库恢复成功" || echo "警告：未找到有效数据库备份"
+        [ -f "dashboard/config.yaml" ] && echo "配置恢复成功" || echo "注意：未找到配置文件备份"
     else
-        echo "在GitHub repo中找不到备份，正在从新的数据目录开始"
+        echo "备份分支不存在或克隆失败, 正在初始化新数据目录"
     fi
     
     # 清理临时目录
     rm -rf "$TEMP_DIR/backup_repo"
 }
 
-# 备份功能
+# 备份功能 - 创建带时间戳的新备份
 create_backup() {
     export TZ=Asia/Shanghai
     TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
@@ -67,33 +59,48 @@ create_backup() {
     fi
     
     echo "正在备份SQLite数据库..."
-    sqlite3 "dashboard/sqlite.db" "VACUUM INTO '$BACKUP_DIR/dashboard/sqlite.db'"
+    sqlite3 "dashboard/sqlite.db" "VACUUM INTO '$BACKUP_DIR/dashboard/sqlite.db_$TIMESTAMP'"
     if [ $? -ne 0 ]; then
         echo "错误: 备份SQLite数据库失败"
         rm -rf "$BACKUP_DIR"
         return 1
     fi
     
-    # 备份 config.yaml
     if [ -f "dashboard/config.yaml" ]; then
         echo "正在备份config.yaml"
-        cp "dashboard/config.yaml" "$BACKUP_DIR/dashboard/config.yaml" || {
+        cp "dashboard/config.yaml" "$BACKUP_DIR/dashboard/config.yaml_$TIMESTAMP" || {
             echo "警告: 备份config.yaml失败" # 不因config.yaml备份失败而终止整个备份
         }
     fi
     
-    # 初始化Git仓库并提交
-    echo "正在创建Git备份"
-    git init "$BACKUP_DIR"
+    # 克隆现有备份仓库或初始化新仓库
+    echo "正在准备Git备份"
+    if git clone --depth 1 --branch "$BACKUP_BRANCH" --single-branch "$CLONE_URL" "$BACKUP_DIR/repo" 2>/dev/null; then
+        echo "使用现有备份仓库"
+        mv "$BACKUP_DIR/repo/.git" "$BACKUP_DIR/"
+        rm -rf "$BACKUP_DIR/repo"
+    else
+        echo "初始化新备份仓库"
+        git init "$BACKUP_DIR"
+    fi
+    
     cd "$BACKUP_DIR" || return 1
-    git remote add origin "https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git"
-    git checkout -b "$BACKUP_BRANCH"
+    git remote add origin "$CLONE_URL" 2>/dev/null || true
+    
+    # 清理7天前的旧备份文件
+    echo "正在清理7天前的旧备份文件"
+    find dashboard -type f -name "sqlite.db_*" -mtime +7 -exec git rm {} \; 2>/dev/null || \
+    find dashboard -type f -name "sqlite.db_*" -mtime +7 -exec rm -f {} \;
+    find dashboard -type f -name "config.yaml_*" -mtime +7 -exec git rm {} \; 2>/dev/null || \
+    find dashboard -type f -name "config.yaml_*" -mtime +7 -exec rm -f {} \;
+    
+    # 添加新备份文件
     git add .
     git commit -m "nezha-v1 Backup $COMMIT_TIME"
     
     # 推送到GitHub
     echo "正在推送备份到GitHub..."
-    git push --force origin "$BACKUP_BRANCH"
+    git push origin "HEAD:$BACKUP_BRANCH" --force
     if [ $? -ne 0 ]; then
         echo "错误: 推送备份到GitHub失败"
         cd - || return 1
@@ -101,36 +108,9 @@ create_backup() {
         return 1
     fi
     
-    # 清理7天前的备份文件（单分支模式）
-    echo "正在清理7天前的旧备份文件"
-    OLD_DATE=$(date -d "7 days ago" +%Y%m%d)
-    
-    # 克隆当前备份分支到临时目录
-    CLEANUP_DIR="$TEMP_DIR/cleanup_repo"
-    git clone --branch "$BACKUP_BRANCH" --single-branch "https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git" "$CLEANUP_DIR" || return 1
-    cd "$CLEANUP_DIR" || return 1
-    
-    # 修改查找路径为 dashboard
-    find dashboard -type f -name "*.*" | while read file; do
-        file_date=$(stat -c %y "$file" | cut -d' ' -f1 | tr -d '-')
-        if [ ! -z "$file_date" ] && [ "$file_date" -lt "$OLD_DATE" ]; then
-            git rm "$file"
-            echo "已删除旧备份文件: $file (修改日期: $file_date)"
-        fi
-    done
-    
-    # 如果有文件被删除，则提交更改
-    if [ -n "$(git status --porcelain)" ]; then
-        git commit -m "清理7天前的旧备份文件"
-        git push origin "$BACKUP_BRANCH"
-        echo "已清理旧备份文件并更新分支"
-    else
-        echo "没有需要清理的旧备份文件"
-    fi
-    
     # 清理临时文件
     cd - || return 1
-    rm -rf "$BACKUP_DIR" "$CLEANUP_DIR"
+    rm -rf "$BACKUP_DIR"
     echo "已成功完成备份和清理"
 }
 
