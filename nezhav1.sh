@@ -13,97 +13,192 @@ success() { echo -e "${GREEN}[成功]${NC} $1"; }
 warning() { echo -e "${YELLOW}[警告]${NC} $1"; }
 error() { echo -e "${RED}[错误]${NC} $1"; }
 
-trap 'error "脚本执行失败，退出码 $?"; exit 1' ERR
+# 检查并自动安装docker环境
+check_docker() {
+    # 检查并安装Docker
+    if ! command -v docker &>/dev/null; then
+        warning "Docker未安装, 正在自动安装..."
+        curl -fsSL https://get.docker.com | sh || {
+            error "Docker安装失败! 请手动安装后重试"
+            exit 1
+        }
+        success "Docker安装成功! "
+    fi
 
-# 检测并安装必要的编辑器
-install_editor() {
-    if ! command -v nano &>/dev/null; then
-        warning "检测到系统未安装 nano 编辑器，正在尝试安装..."
-        if command -v apt-get &>/dev/null; then
-            info "检测到 apt 包管理器，尝试安装 nano..."
-            sudo apt-get update && sudo apt-get install -y nano
-        elif command -v yum &>/dev/null; then
-            info "检测到 yum 包管理器，尝试安装 nano..."
-            sudo yum install -y nano
-        elif command -v apk &>/dev/null; then
-            info "检测到 apk 包管理器(Alpine系统), 尝试安装 nano..."
-            apk add nano vim
+    # 检查并安装docker-compose
+    if ! command -v docker-compose &>/dev/null; then
+        warning "docker-compose未安装, 正在自动安装..."
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
+             -o /usr/local/bin/docker-compose && \
+        sudo chmod +x /usr/local/bin/docker-compose || {
+            error "docker-compose安装失败! "
+            exit 1
+        }
+        success "docker-compose安装成功! "
+    fi
+    
+    # 检查Docker服务状态
+    if ! systemctl is-active --quiet docker 2>/dev/null; then
+        warning "Docker服务未运行, 正在尝试启动..."
+        sudo systemctl start docker || {
+            error "Docker服务启动失败!"
+            exit 1
+        }
+    fi
+}
+
+# 检查443端口占用
+check_ports() {
+    local port_occupied=false
+    if command -v ss &>/dev/null && ss -tulnp | grep -q ':443\b'; then
+        port_occupied=true
+    elif command -v netstat &>/dev/null && netstat -tulnp | grep -q ':443\b'; then
+        port_occupied=true
+    fi
+    if $port_occupied; then
+        error "443端口已被占用, 请先停止占用服务"
+        exit 1
+    fi
+}
+
+# 验证GitHub Token
+validate_github_token() {
+    info "验证GitHub Token权限..."
+    response=$(curl -s -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/user)
+    
+    status=${response: -3}
+    body=${response%???}
+    
+    if [ "$status" -ne 200 ]; then
+        error "Token验证失败! HTTP状态码: $status\n响应信息: $body"
+        exit 1
+    fi
+}
+
+# 交互式输入变量
+input_variables() {
+    echo -e "\n${YELLOW}==== 配置输入 (按Ctrl+C退出) ====${NC}"
+    
+    while true; do
+        read -p "GitHub Token: " GITHUB_TOKEN
+        [ -n "$GITHUB_TOKEN" ] && break
+        warning "Token不能为空!"
+    done
+    
+    validate_github_token
+    
+    while true; do
+        read -p "GitHub 用户名: " GITHUB_REPO_OWNER
+        [ -n "$GITHUB_REPO_OWNER" ] && break
+        warning "用户名不能为空!"
+    done
+    
+    read -p "用于备份的 GitHub 仓库名 (默认创建私有仓库 nezha-backup): " GITHUB_REPO_NAME
+    GITHUB_REPO_NAME=${GITHUB_REPO_NAME:-nezha-backup}
+    # 检查仓库是否存在，不存在则创建
+    repo_status=$(curl -s -o /dev/null -w "%{http_code}" \
+                 -H "Authorization: token $GITHUB_TOKEN" \
+                 -H "Accept: application/vnd.github+json" \
+                 https://api.github.com/repos/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME)
+
+    case $repo_status in
+        200) success "仓库已存在，跳过创建" ;;
+        404)
+            info "正在创建私有仓库..."
+            curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+                 -H "Accept: application/vnd.github+json" \
+                 -d '{"name":"'"$GITHUB_REPO_NAME"'","private":true}' \
+                 https://api.github.com/user/repos || {
+                error "仓库创建失败！请检查：\n1. Token是否有repo权限\n2. 仓库名是否合法"
+                exit 1
+            }
+            success "私有仓库 $GITHUB_REPO_NAME 创建成功！" ;;
+        403) error "API速率限制已达上限, 请稍后重试" ;;
+        *)   error "GitHub API访问异常 (HTTP $repo_status)" ;;
+    esac
+    
+    echo -e "\n${YELLOW}Argo Token 说明：${NC}"
+    echo -e " - 纯Token格式: 'ey开头的一长串字符'"
+    echo -e " - JSON格式: '{\"Token\":\"xxx\"}' (注意单引号包裹)"
+    while true; do
+        read -p "请输入Argo Token: " ARGO_AUTH
+        [ -n "$ARGO_AUTH" ] && break
+        warning "Token不能为空!"
+    done
+    
+    while true; do
+        read -p "哪吒面板域名 (如nezha.example.com): " ARGO_DOMAIN
+        if [[ "$ARGO_DOMAIN" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+            break
         else
-            warning "无法自动安装 nano, 将尝试使用 vi/vim 编辑器"
+            warning "域名格式无效！请使用类似 nezha.example.com 的格式"
         fi
-    else
-        success "nano 编辑器已安装，跳过安装步骤"
-    fi
-}
-
-# 克隆仓库（使用镜像加速）
-info "正在克隆仓库..."
-git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v1.git || {
-    error "克隆仓库失败！请检查网络连接或镜像地址"
-    exit 1
-}
-cd argo-nezha-v1 || {
-    error "进入项目目录失败"
-    exit 1
-}
-
-# 生成 env.txt 配置文件
-info "正在生成 env.txt 环境变量文件..."
-cat > env.txt << 'EOF'
-GITHUB_TOKEN=<填写你的github个人token>
-GITHUB_REPO_OWNER=<填写你的github用户名>
-GITHUB_REPO_NAME=<填写你用来备份的私有github仓库名>
+    done
+    
+    cat > env.txt << EOF
+GITHUB_TOKEN=${GITHUB_TOKEN}
+GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER}
+GITHUB_REPO_NAME=${GITHUB_REPO_NAME}
 BACKUP_BRANCH=nezha-v1
-ARGO_AUTH=<填写你的argo token或json, 如果是json需要用英文单引号包裹>
-ARGO_DOMAIN=<填写你的面板域名>
+ARGO_AUTH=${ARGO_AUTH}
+ARGO_DOMAIN=${ARGO_DOMAIN}
 EOF
+    
+    # 显示配置摘要（隐藏敏感信息）
+    success "生成配置摘要："
+    awk -F'=' '{
+        if($1=="GITHUB_TOKEN" || $1=="ARGO_AUTH") 
+            print $1 "=" substr($2,1,4) "******"
+        else 
+            print $0
+    }' env.txt | column -t
+}
 
-# 提示用户编辑配置
-warning "\n请先编辑 env.txt 文件，填写正确的配置后再继续！"
-install_editor  # 确保有可用的编辑器
-
-# 自动选择可用编辑器
-EDITOR=""
-for editor in nano vi vim; do
-    if command -v $editor &>/dev/null; then
-        EDITOR=$editor
-        break
+# 主流程
+main() {
+    trap 'error "脚本被用户中断"; exit 1' INT
+    
+    check_docker
+    check_ports
+    
+    info "正在检查网络连接..."
+    if ! curl -s --retry 3 --retry-delay 2 -I https://github.com >/dev/null; then
+        error "网络连接异常，请检查网络设置！"
+        exit 1
     fi
-done
 
-if [ -z "$EDITOR" ]; then
-    error "未找到任何文本编辑器！"
-    info "请手动安装编辑器后再运行脚本："
-    echo -e "  ${BLUE}Debian/Ubuntu:${NC} sudo apt-get install nano"
-    echo -e "  ${BLUE}CentOS/RHEL:${NC}   sudo yum install nano"
-    echo -e "  ${BLUE}Alpine:${NC}        apk add nano"
-    exit 1
-fi
-
-info "将使用 ${GREEN}${EDITOR}${NC} 编辑器打开文件..."
-echo -e "${YELLOW}编辑完成后：${NC}"
-echo -e "  - ${BLUE}nano:${NC} 按 ${GREEN}Ctrl+X${NC}，然后输入 ${GREEN}Y${NC} 保存"
-echo -e "  - ${BLUE}vi/vim:${NC} 按 ${GREEN}ESC${NC} 输入 ${GREEN}:wq${NC} 保存"
-read -p "$(echo -e "${BLUE}按 Enter 键开始编辑...${NC}")" -r
-$EDITOR env.txt
-
-# 拉取镜像并启动容器
-info "正在拉取 Docker 镜像..."
-docker-compose pull || {
-    error "拉取镜像失败！请检查 Docker 服务是否运行"
-    exit 1
+    info "正在克隆仓库..."
+    git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v1.git || {
+        error "克隆失败！请检查: \n1. 网络连接\n2. git是否安装\n3. 镜像地址有效性"
+        exit 1
+    }
+    
+    cd argo-nezha-v1 || {
+        error "目录切换失败"
+        exit 1
+    }
+    input_variables
+    
+    info "正在启动服务..."
+    docker-compose pull && docker-compose --env-file=env.txt up -d || {
+        error "启动失败！请检查:\n1. Docker服务状态\n2. 磁盘空间\n3. 端口冲突"
+        exit 1
+    }
+    
+    success "\n哪吒面板部署成功! 访问地址: https://${ARGO_DOMAIN}"
+    # 显示初始访问信息
+    echo -e "\n${YELLOW}首次访问可能需要：${NC}"
+    echo -e "1. 等待SSL证书自动签发(约1-2分钟)"
+    echo -e "2. 检查防火墙/安全组放行443端口"
+    echo -e "3. aogo 隧道要打开--其他设置--TLS--无TLS验证: on; HTTP2连接: on"
+    
+    echo -e "\n${BLUE}管理命令：${NC}"
+    echo -e " 查看状态\t${GREEN}docker ps -a${NC}"
+    echo -e " 查看日志\t${GREEN}docker logs argo-nezha-v1${NC}"
+    echo -e " 重启服务\t${GREEN}docker compose restart argo-nezha-v1${NC}"
+    echo -e " 停止服务\t${GREEN}docker compose stop argo-nezha-v1${NC}"
+    echo -e " 完全删除\t${GREEN}docker compose down -v${NC}"
 }
-
-info "正在启动容器..."
-docker-compose --env-file=env.txt up -d || {
-    error "启动容器失败！"
-    exit 1
-}
-
-success "\n部署完成！"
-echo -e "${BLUE}后续操作命令：${NC}"
-echo -e " - 检查容器状态: ${GREEN}docker ps -a${NC}"
-echo -e " - 查看备份日志: ${GREEN}docker exec -it argo-nezha-v1 cat /dashboard/backup.log${NC}"
-echo -e " - 修改配置后重新部署: ${GREEN}docker-compose --env-file=env.txt up -d${NC}"
-echo -e " - 停止服务: ${GREEN}docker-compose down${NC}"
-echo -e " - 重启服务: ${GREEN}docker-compose restart${NC}"
+main
