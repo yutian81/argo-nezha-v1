@@ -1,3 +1,12 @@
+#!/bin/sh
+
+# 设置默认值
+GITHUB_TOKEN=${GITHUB_TOKEN:-""}
+GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER:-""}
+GITHUB_REPO_NAME=${GITHUB_REPO_NAME:-""}
+BACKUP_BRANCH=${BACKUP_BRANCH:-"nezha-v1"}
+CLONE_URL=https://$GITHUB_TOKEN@github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME.git
+
 # 统一错误处理函数
 die() { echo "错误: $*" >&2; exit 1; }
 
