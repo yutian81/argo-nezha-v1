@@ -15,7 +15,7 @@ error() { echo -e "${RED}[错误]${NC} $1"; }
 
 # 检查并自动安装docker环境
 check_docker() {
-    # 检查并安装Docker
+    # 检查并安装 Docker
     if ! command -v docker &>/dev/null; then
         warning "Docker未安装, 正在自动安装..."
         curl -fsSL https://get.docker.com | sh || {
@@ -25,19 +25,13 @@ check_docker() {
         success "Docker安装成功! "
     fi
 
-    # 检查并安装docker-compose
-    if ! command -v docker-compose &>/dev/null; then
-        warning "docker-compose未安装, 正在自动安装..."
-        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
-             -o /usr/local/bin/docker-compose && \
-        sudo chmod +x /usr/local/bin/docker-compose || {
-            error "docker-compose安装失败! "
-            exit 1
-        }
-        success "docker-compose安装成功! "
+    # 检查 Docker Compose 插件是否可用（无需单独安装）
+    if ! docker compose version &>/dev/null; then
+        error "Docker Compose 插件不可用! 请确保安装的是 Docker v20.10+ 版本"
+        exit 1
     fi
     
-    # 检查Docker服务状态
+    # 检查 Docker 服务状态
     if ! systemctl is-active --quiet docker 2>/dev/null; then
         warning "Docker服务未运行, 正在尝试启动..."
         sudo systemctl start docker || {
@@ -159,7 +153,6 @@ EOF
 # 主流程
 main() {
     trap 'error "脚本被用户中断"; exit 1' INT
-    
     check_docker
     check_ports
     
@@ -182,7 +175,7 @@ main() {
     input_variables
     
     info "正在启动服务..."
-    docker-compose pull && docker-compose --env-file=env.txt up -d || {
+    docker compose pull && docker compose up -d || {
         error "启动失败！请检查:\n1. Docker服务状态\n2. 磁盘空间\n3. 端口冲突"
         exit 1
     }
@@ -196,9 +189,11 @@ main() {
     
     echo -e "\n${BLUE}管理命令：${NC}"
     echo -e " 查看状态\t${GREEN}docker ps -a${NC}"
-    echo -e " 查看日志\t${GREEN}docker logs argo-nezha-v1${NC}"
-    echo -e " 重启服务\t${GREEN}docker compose restart argo-nezha-v1${NC}"
+    echo -e " 查看日志\t${GREEN}docker logs -f argo-nezha-v1${NC}"
+    echo -e " 启动服务\t${GREEN}docker compose up -d argo-nezha-v1${NC}"
     echo -e " 停止服务\t${GREEN}docker compose stop argo-nezha-v1${NC}"
-    echo -e " 完全删除\t${GREEN}docker compose down -v${NC}"
+    echo -e " 重启服务\t${GREEN}docker compose restart argo-nezha-v1${NC}"
+    echo -e " 更新镜像\t${GREEN}cd argo-nezha-v1 && docker compose pull && docker compose up -d${NC}"
+    echo -e " 完全删除\t${RED}警告：将删除nezha的所有数据！${NC} ${GREEN}cd argo-nezha-v1 && docker compose down -v${NC}"
 }
 main
