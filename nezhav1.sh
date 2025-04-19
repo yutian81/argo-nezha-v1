@@ -163,7 +163,14 @@ main() {
     fi
 
     info "正在克隆仓库..."
-    git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v1.git || {
+    # [ -d "argo-nezha-v1" ] && {
+    #     warning "检测到已存在的目录，正在强制清理..."
+    #     rm -rf argo-nezha-v1 || {
+    #         error "清理失败！请手动删除 /root/argo-nezha-v1 目录"
+    #         exit 1
+    #     }
+    # }
+    git clone -b github --depth 1 https://ghproxy.net/https://github.com/yutian81/argo-nezha-v1.git || {
         error "克隆失败！请检查: \n1. 网络连接\n2. git是否安装\n3. 镜像地址有效性"
         exit 1
     }
