@@ -197,7 +197,7 @@ main() {
     echo -e "\n${BLUE}▍管理命令: ${NC}"
     echo -e "  🔍 查看状态\t${GREEN}docker ps -a${NC}"
     echo -e "  📜 查看日志\t${GREEN}docker logs -f argo-nezha-v1${NC}"
-    echo -e "\n${YELLOW}▍操作指引: ${NC}"
+    echo -e "\n${BLUE}▍操作指引: ${NC}"
     echo -e "  📂 请先执行\t${GREEN}cd argo-nezha-v1${NC}"
     echo -e "  🟢 启动服务\t${GREEN}docker compose up -d${NC}"
     echo -e "  🔴 停止服务\t${GREEN}docker compose stop${NC}"
