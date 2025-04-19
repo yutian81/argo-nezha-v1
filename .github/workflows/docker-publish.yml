@@ -3,7 +3,7 @@ name: Publish Docker Image
 on:
   workflow_dispatch:  # 手动触发
   schedule:
-    - cron: '0 1 * * *'  # Asia/Shanghai 时间10点（UTC 时间1:00）
+    - cron: '0 18 * * 6'  # 北京时间每周天凌晨2点
 
 jobs:
   build-and-push:
