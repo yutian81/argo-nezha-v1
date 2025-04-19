@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e  # 遇到错误自动退出
-
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -15,6 +13,8 @@ success() { echo -e "${GREEN}[成功]${NC} $1"; }
 warning() { echo -e "${YELLOW}[警告]${NC} $1"; }
 error() { echo -e "${RED}[错误]${NC} $1"; }
 
+trap 'error "脚本执行失败，退出码 $?"; exit 1' ERR
+
 # 检测并安装必要的编辑器
 install_editor() {
     if ! command -v nano &>/dev/null; then
@@ -27,7 +27,7 @@ install_editor() {
             sudo yum install -y nano
         elif command -v apk &>/dev/null; then
             info "检测到 apk 包管理器(Alpine系统), 尝试安装 nano..."
-            apk add nano vim busybox-extras
+            apk add nano vim
         else
             warning "无法自动安装 nano, 将尝试使用 vi/vim 编辑器"
         fi
