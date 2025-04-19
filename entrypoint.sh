@@ -34,7 +34,7 @@ sleep 3
 # 启动 cloudflared
 if [ -n "$ARGO_AUTH" ]; then
     echo "正在启动 cloudflared..."
-    cloudflared --no-autoupdate tunnel run --protocol http2 --token "$ARGO_AUTH" &
+    cloudflared --no-autoupdate tunnel run --protocol http2 --token "$ARGO_AUTH" >/dev/null 2>&1 &
 else
     echo "警告: 未设置 ARGO_AUTH，正在跳过执行 cloudflared"
 fi
