@@ -6,6 +6,8 @@ services:
     restart: unless-stopped
     ports:
       - "443:443"
+    env_file:
+      - .env
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER}
