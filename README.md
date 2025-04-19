@@ -6,8 +6,9 @@
 
 ## 项目特点：
 
-- **自动备份**: 支持自动备份到 github 私有仓库
+- **自动备份**: 支持自动备份到 github 私有仓库（北京时间每天凌晨2点）
 - **安全访问**: 通过 caddy 和 Cloudflare Tunnel 提供安全的访问
+- **一键部署**: 运行 `nezhav1.sh` 输入必要变量后，实现一键部署
 
 ----
 
@@ -39,32 +40,60 @@
 ## 快速开始
 
 ### VPS 平台
-1. **克隆项目**
+1. **执行一键脚本**
+
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/yutian81/argo-nezha-v1/github/nezhav1.sh)
+```
+
+2. **按提示输入以下变量**
+
+- **GITHUB_TOKEN**=github的访问令牌
+- **GITHUB_REPO_OWNER**=github用户名
+- **GITHUB_REPO_NAME**=用于备份的github仓库名
+- **BACKUP_BRANCH**=用于备份的github仓库分支
+- **ARGO_AUTH**='Cloudflare Argo Tunnel 令牌'，json格式的秘钥必须用英文单引号包裹
+- **ARGO_DOMAIN**=在argo中设置的哪吒面板域名
+
+3. **访问面板**
+
+```
+https://你在argo隧道中设置的面板域名
+```
+
+> **初始用户名/密码为：admin/admin**
+
+4. **手动部署**
+
+依次执行以下命令: 注意--需要在 env.txt 文件中填入变量值
 
 ```bash
 git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v1.git
+cd argo-nezha-v1
+docker-compose pull
+docker-compose up -d
 ```
 
-> 注意，我修改的项目在我仓库的 [github 分支](https://github.com/yutian81/argo-nezha-v1/tree/github)
-
-2. **修改 .env 环境变量**
-
-通过ssh的sftp工具访问vps的`root/argo-nezha-v1`目录，修改.env 文件里的变量：
+### PaaS 平台
+1. **拉取dockhub镜像**
 
 ```bash
-# github设置，用于备份，BACKUP_BRANC是指备份的分支
-GITHUB_TOKEN=github的访问令牌
-GITHUB_REPO_OWNER=github用户名
-GITHUB_REPO_NAME=用于备份的github仓库名
-BACKUP_BRANCH=用于备份的github仓库分支
-# argo设置
-ARGO_AUTH='Cloudflare Argo Tunnel 令牌'，json格式的秘钥必须用英文单引号包裹
-ARGO_DOMAIN=面板域名
+docker pull yutian81/argo-nezha-v1:latest
 ```
 
-3. **拉取镜像并启动**
+2. **设置变量**
 
-依次执行以下命令:
+变量名与vps搭建相同
+
+3. **暴露443端口**
+
+----
+
+## 其他操作
+
+### 更新镜像
+
+**手动更新**：登录 vps，依次运行以下命令：
 
 ```bash
 cd argo-nezha-v1
@@ -72,9 +101,34 @@ docker compose pull
 docker compose up -d
 ```
 
-> **面板安装完成，访问 ARGO_DOMAIN 即可访问自己的面板**
-> 
-> **初始用户名/密码为：admin/admin**
+**自动更新**：加入系统 corn 任务
+```bash
+(crontab -l 2>/dev/null | grep -v "argo-nezha-v1"; echo "0 3 * * * cd /root/argo-nezha-v1 && /usr/bin/docker-compose pull && /usr/bin/docker-compose up -d >> /var/log/nezha_update.log 2>&1") | crontab -
+```
+
+## 备份和恢复
+
+**项目支持自动备份到 Github 私有仓库**
+
+备份脚本 `/backup.sh` 会在每天凌晨 2 点执行。
+
+**ssh 进入 `argo-nezha-v1` 目录，修改 `backup.sh` 文件开头的变量，可以执行手动备份和恢复**
+
+### 手动备份
+```bash
+# 在vps终端执行
+cd argo-nezha-v1 && chmod +x backup.sh && ./backup.sh backup
+# 在docker内执行
+docker exec -it argo-nezha-v1 /backup.sh backup
+```
+
+### 手动恢复
+```bash
+# 在vps终端执行
+cd argo-nezha-v1 && chmod +x backup.sh && ./backup.sh restore
+# 在docker内执行
+docker exec -it argo-nezha-v1 /backup.sh restore
+```
 
 ----
 
@@ -136,40 +190,6 @@ oauth2:
   - 名称：⚡ 离线
   - 规则：`[{"type":"offline","duration":180,"cover":0}]`
 - 其他警报规则请看官方文档
-
-----
-
-## 更新镜像
-   
-登录 vps，依次运行以下命令：
-
-```bash
-cd argo-nezha-v1
-docker compose pull
-docker compose up -d
-```
-
-可以将上述代码编写为 sh 文件，加入系统的 corn 计划任务，具体可以问 AI
-
-----
-
-## 备份和恢复
-
-项目支持自动备份到 Github 私有仓库，并在启动时尝试恢复最新备份
-
-备份脚本 `/backup.sh` 会在每天凌晨 2 点执行。
-
-**ssh 进入 `argo-nezha-v1` 目录，修改 `backup.sh` 文件开头的变量，可以执行手动备份和恢复**
-
-### 手动备份
-```bash
-cd argo-nezha-v1 && chmod +x backup.sh && ./backup.sh backup
-```
-
-### 手动恢复备份
-```bash
-cd argo-nezha-v1 && chmod +x backup.sh && ./backup.sh restore
-```
 
 ----
 
