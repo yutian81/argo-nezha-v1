@@ -70,8 +70,8 @@ https://你在argo隧道中设置的面板域名
 ```bash
 git clone -b github https://ghproxy.net/https://github.com/yutian81/argo-nezha-v1.git
 cd argo-nezha-v1
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 ```
 
 ### PaaS 平台
@@ -103,7 +103,7 @@ docker compose up -d
 
 **自动更新**：加入系统 corn 任务
 ```bash
-(crontab -l 2>/dev/null | grep -v "argo-nezha-v1"; echo "0 3 * * * cd /root/argo-nezha-v1 && /usr/bin/docker-compose pull && /usr/bin/docker-compose up -d >> /var/log/nezha_update.log 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "argo-nezha-v1"; echo "0 3 * * * cd /root/argo-nezha-v1 && /usr/bin/docker compose pull && /usr/bin/docker compose up -d >> /var/log/nezha_update.log 2>&1") | crontab -
 ```
 
 ## 备份和恢复
