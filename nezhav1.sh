@@ -187,13 +187,15 @@ main() {
     echo -e "2. 检查防火墙/安全组放行443端口"
     echo -e "3. aogo 隧道要打开--其他设置--TLS--无TLS验证: on; HTTP2连接: on"
     
-    echo -e "\n${BLUE}管理命令：${NC}"
-    echo -e " 查看状态\t${GREEN}docker ps -a${NC}"
-    echo -e " 查看日志\t${GREEN}docker logs -f argo-nezha-v1${NC}"
-    echo -e " 启动服务\t${GREEN}docker compose up -d argo-nezha-v1${NC}"
-    echo -e " 停止服务\t${GREEN}docker compose stop argo-nezha-v1${NC}"
-    echo -e " 重启服务\t${GREEN}docker compose restart argo-nezha-v1${NC}"
-    echo -e " 更新镜像\t${GREEN}cd argo-nezha-v1 && docker compose pull && docker compose up -d${NC}"
-    echo -e " 完全删除\t${RED}警告：将删除nezha的所有数据！${NC} ${GREEN}cd argo-nezha-v1 && docker compose down -v${NC}"
+    echo -e "\n${BLUE}▍管理命令: ${NC}"
+    echo -e "  🔍 查看状态\t${GREEN}docker ps -a${NC}"
+    echo -e "  📜 查看日志\t${GREEN}docker logs -f argo-nezha-v1${NC}"
+    echo -e "\n${YELLOW}▍操作指引: ${NC}"
+    echo -e "  📂 请先执行\t${GREEN}cd argo-nezha-v1${NC}"
+    echo -e "  🟢 启动服务\t${GREEN}docker compose up -d${NC}"
+    echo -e "  🔴 停止服务\t${GREEN}docker compose stop${NC}"
+    echo -e "  🔄 重启服务\t${GREEN}docker compose restart${NC}"
+    echo -e "  ⬇️ 更新镜像\t${GREEN}docker compose pull && docker compose up -d${NC}"
+    echo -e "  ⚠️ 完全删除\t${GREEN}docker compose down -v${NC} ${RED}警告: 请先备份数据!${NC}"
 }
 main
