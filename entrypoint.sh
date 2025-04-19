@@ -38,7 +38,7 @@ sleep 3
 # 启动 cloudflared
 if [ -n "$CF_TOKEN" ]; then
     echo "Starting cloudflared..."
-    cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" &
+    cloudflared --no-autoupdate tunnel run --protocol http2 --token "$CF_TOKEN" >/dev/null 2>&1 &
 else
     echo "Warning: CF_TOKEN is not set, skipping cloudflared"
 fi
